@@ -1174,6 +1174,11 @@ body{display:flex}
 
 <div class="toast" id="toast"></div>
 
+<!-- Supabase client — only actually contacts a server once you paste your own project URL
+     and anon key into the SUPABASE_URL/SUPABASE_ANON_KEY constants near the top of the
+     script below. Until then the two constants stay as placeholders and the app quietly
+     keeps working exactly as before, on localStorage only. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ══════════════════════════
 // INIT ANIMATED BACKGROUND
@@ -1444,6 +1449,23 @@ let sortOrders=JSON.parse(localStorage.getItem('cv3_sort')||'{"movies":"date_des
 let editId=null;let rating=0;let posterUrl='';
 let sidebarSlim=false;
 
+// ══ CLOUD SYNC (Supabase) — OPTIONAL, off until you configure it ══
+// Paste your own project's values here (Supabase dashboard → Settings → API).
+// Left as placeholders, the app runs exactly like before: localStorage only, one browser,
+// one device. Filled in, every add/edit/delete/favourite also syncs to your Supabase
+// project in the background, and the SAME data shows up on every device that opens this
+// same page — that's what makes it a real "log in from my phone and my laptop" app.
+const SUPABASE_URL='https://gdvnqlbjprknfdlaovbq.supabase.co/rest/v1/';        // e.g. 'https://abcdefgh.supabase.co'
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkdm5xbGJqcHJrbmZkbGFvdmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzU4ODcsImV4cCI6MjA5OTg1MTg4N30.Llg9INeSTQ7IXtTEQi2XA_Av8Y68xLGFnDwrYrmK9YU';      // the long "anon public" key, not the secret one
+const SUPABASE_ENABLED=SUPABASE_URL.startsWith('http')&&SUPABASE_ANON_KEY.length>20;
+const sb=SUPABASE_ENABLED?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+let cloudStatus='local'; // 'local' | 'synced' | 'offline' — shown in the corner toast on load
+
+// In-memory copy of everything currently on screen. Every existing function in this file
+// already reads/writes through load()/getData()/save() — none of that call-site code needs
+// to change; only what those three functions actually DO changes below.
+let STATE={movies:[],series:[],anime:[],books:[]};
+
 const PAGES={
   home:{title:'Home',sub:'Welcome back, Cinephile ✦',acc:'#7C5CFC',add:'Add'},
   movies:{title:'Movies',sub:'Every frame tells your story',acc:'#7C5CFC',add:'Add Movie'},
@@ -1568,9 +1590,47 @@ function applyVocabToModal(sec){
 }
 
 // ══ STORAGE ══
-function load(){try{return JSON.parse(localStorage.getItem('cv3')||'{"movies":[],"series":[],"anime":[],"books":[]}')}catch{return{movies:[],series:[],anime:[],books:[]}}}
-function save(d){localStorage.setItem('cv3',JSON.stringify(d))}
-function getData(){return load()}
+// load()/getData() now just hand back the in-memory STATE — same signature every existing
+// caller already expects, so nothing else in the file needs to know cloud sync exists.
+function load(){return STATE}
+function getData(){return STATE}
+// save() keeps localStorage as an always-current OFFLINE CACHE regardless of cloud status —
+// if Supabase is unreachable (no internet, wrong keys) the app still works from this cache.
+function save(d){STATE=d;localStorage.setItem('cv3',JSON.stringify(d))}
+
+// Targeted cloud writes — called individually from saveEntry/toggleFav/delEntry with exactly
+// the one row that changed, rather than re-uploading the whole collection on every click.
+async function cloudUpsert(sec,entry){
+  if(!SUPABASE_ENABLED)return;
+  const{error}=await sb.from('entries').upsert({...entry,section:sec});
+  if(error){console.error('Supabase upsert failed:',error);toast('⚠️ Saved locally — cloud sync failed')}
+}
+async function cloudDelete(id){
+  if(!SUPABASE_ENABLED)return;
+  const{error}=await sb.from('entries').delete().eq('id',id);
+  if(error){console.error('Supabase delete failed:',error);toast('⚠️ Deleted locally — cloud sync failed')}
+}
+// Runs once on page load: pull everything from Supabase (so a second device sees what the
+// first one added) and use it as the working STATE. Falls back to the local cache if the
+// fetch fails for any reason (offline, bad keys, project paused) so the app never just
+// shows a blank page.
+async function bootstrapData(){
+  const localCache=(()=>{try{return JSON.parse(localStorage.getItem('cv3')||'{"movies":[],"series":[],"anime":[],"books":[]}')}catch{return{movies:[],series:[],anime:[],books:[]}}})();
+  if(!SUPABASE_ENABLED){STATE=localCache;renderAll();return}
+  try{
+    const{data,error}=await sb.from('entries').select('*');
+    if(error)throw error;
+    const fresh={movies:[],series:[],anime:[],books:[]};
+    (data||[]).forEach(row=>{const sec=row.section;if(fresh[sec])fresh[sec].push(row)});
+    STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
+    cloudStatus='synced';
+  }catch(err){
+    console.error('Supabase fetch failed, using local cache instead:',err);
+    STATE=localCache;cloudStatus='offline';
+    toast('⚠️ Could not reach cloud — showing your last saved copy');
+  }
+  renderAll();
+}
 
 // ══ PAGE NAVIGATION ══
 function goPage(p,preserveFranchiseFilter){
@@ -2175,14 +2235,14 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function toggleFav(id,sec,e){
   e.stopPropagation();
   const d=getData();const i=(d[sec]||[]).find(x=>x.id===id);
-  if(!i)return;i.fav=!i.fav;save(d);renderAll();
+  if(!i)return;i.fav=!i.fav;save(d);renderAll();cloudUpsert(sec,i);
   toast(i.fav?'⭐ Added to favourites':'Removed from favourites');
 }
 function delEntry(id,sec,e){
   e.stopPropagation();
   if(!confirm('Delete this entry?'))return;
   const d=getData();d[sec]=(d[sec]||[]).filter(i=>i.id!==id);
-  save(d);renderAll();toast('Deleted');
+  save(d);renderAll();cloudDelete(id);toast('Deleted');
 }
 
 // ══ EDIT ══
@@ -2529,12 +2589,12 @@ function saveEntry(){
     if(!d[targetSec])d[targetSec]=[];
     d[targetSec].unshift(entry);
   }
-  save(d);renderAll();closeModal();
+  save(d);renderAll();closeModal();cloudUpsert(targetSec,entry);
   toast(editId?'✅ Updated!':'✨ Added to your collection!');
 }
 
 // ══ INIT ══
-renderAll();
+bootstrapData();
 </script>
 </body>
 </html>
