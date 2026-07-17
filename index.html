@@ -1598,11 +1598,33 @@ function getData(){return STATE}
 // if Supabase is unreachable (no internet, wrong keys) the app still works from this cache.
 function save(d){STATE=d;localStorage.setItem('cv3',JSON.stringify(d))}
 
+// Explicit mapping between the app's in-memory field names (camelCase, e.g. epWatched)
+// and the database's column names (snake_case, e.g. ep_watched) — every write and read
+// goes through these two functions, so the two sides can never silently drift apart again.
+function entryToRow(sec,entry){
+  return{
+    id:entry.id,section:sec,title:entry.title,region:entry.region,year:entry.year,
+    genre:entry.genre,director:entry.director,franchise:entry.franchise,status:entry.status,
+    rating:entry.rating,review:entry.review,quote:entry.quote,watch_date:entry.date,
+    rewatch:entry.rewatch,ep_watched:entry.epWatched,ep_total:entry.epTotal,
+    poster:entry.poster,fav:entry.fav,added_at:entry.addedAt,
+  };
+}
+function rowToEntry(row){
+  return{
+    id:row.id,title:row.title,region:row.region,year:row.year,genre:row.genre,
+    director:row.director,franchise:row.franchise,status:row.status,rating:row.rating,
+    review:row.review,quote:row.quote,date:row.watch_date,rewatch:row.rewatch,
+    epWatched:row.ep_watched,epTotal:row.ep_total,poster:row.poster,fav:row.fav,
+    addedAt:row.added_at,_sec:row.section,
+  };
+}
+
 // Targeted cloud writes — called individually from saveEntry/toggleFav/delEntry with exactly
 // the one row that changed, rather than re-uploading the whole collection on every click.
 async function cloudUpsert(sec,entry){
   if(!SUPABASE_ENABLED)return;
-  const{error}=await sb.from('entries').upsert({...entry,section:sec});
+  const{error}=await sb.from('entries').upsert(entryToRow(sec,entry));
   if(error){console.error('Supabase upsert failed:',error);toast('⚠️ Saved locally — cloud sync failed')}
 }
 async function cloudDelete(id){
@@ -1622,7 +1644,7 @@ async function bootstrapData(){
     const{data,error}=await sb.from('entries').select('*');
     if(error)throw error;
     const fresh={movies:[],series:[],anime:[],books:[]};
-    (data||[]).forEach(row=>{const sec=row.section;if(fresh[sec])fresh[sec].push(row)});
+    (data||[]).forEach(row=>{const sec=row.section;if(fresh[sec])fresh[sec].push(rowToEntry(row))});
     const cloudHasData=Object.values(fresh).some(arr=>arr.length>0);
     if(!cloudHasData&&localHasData){
       // The request "succeeded" but came back with zero rows, while you clearly have
