@@ -1455,7 +1455,7 @@ let sidebarSlim=false;
 // one device. Filled in, every add/edit/delete/favourite also syncs to your Supabase
 // project in the background, and the SAME data shows up on every device that opens this
 // same page — that's what makes it a real "log in from my phone and my laptop" app.
-const SUPABASE_URL='https://gdvnqlbjprknfdlaovbq.supabase.co/rest/v1/';        // e.g. 'https://abcdefgh.supabase.co'
+const SUPABASE_URL='https://gdvnqlbjprknfdlaovbq.supabase.co';        // e.g. 'https://abcdefgh.supabase.co'
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkdm5xbGJqcHJrbmZkbGFvdmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzU4ODcsImV4cCI6MjA5OTg1MTg4N30.Llg9INeSTQ7IXtTEQi2XA_Av8Y68xLGFnDwrYrmK9YU';      // the long "anon public" key, not the secret one
 const SUPABASE_ENABLED=SUPABASE_URL.startsWith('http')&&SUPABASE_ANON_KEY.length>20;
 const sb=SUPABASE_ENABLED?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
