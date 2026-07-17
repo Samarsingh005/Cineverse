@@ -1616,14 +1616,25 @@ async function cloudDelete(id){
 // shows a blank page.
 async function bootstrapData(){
   const localCache=(()=>{try{return JSON.parse(localStorage.getItem('cv3')||'{"movies":[],"series":[],"anime":[],"books":[]}')}catch{return{movies:[],series:[],anime:[],books:[]}}})();
+  const localHasData=Object.values(localCache).some(arr=>Array.isArray(arr)&&arr.length>0);
   if(!SUPABASE_ENABLED){STATE=localCache;renderAll();return}
   try{
     const{data,error}=await sb.from('entries').select('*');
     if(error)throw error;
     const fresh={movies:[],series:[],anime:[],books:[]};
     (data||[]).forEach(row=>{const sec=row.section;if(fresh[sec])fresh[sec].push(row)});
-    STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
-    cloudStatus='synced';
+    const cloudHasData=Object.values(fresh).some(arr=>arr.length>0);
+    if(!cloudHasData&&localHasData){
+      // The request "succeeded" but came back with zero rows, while you clearly have
+      // entries saved locally. That's a red flag (missing table, blocked-by-RLS,
+      // wrong project) — NOT proof your collection is actually empty. Never let an
+      // ambiguous empty cloud response erase real local data.
+      STATE=localCache;cloudStatus='offline';
+      toast('⚠️ Cloud came back empty — showing your local copy (check your Supabase setup)');
+    }else{
+      STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
+      cloudStatus='synced';
+    }
   }catch(err){
     console.error('Supabase fetch failed, using local cache instead:',err);
     STATE=localCache;cloudStatus='offline';
