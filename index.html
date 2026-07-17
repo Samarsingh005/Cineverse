@@ -1,0 +1,2540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineVerse — Every Story Leaves a Mark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05070D;--surface:#0A0E1A;--glass:rgba(10,14,26,0.7);
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#E8ECF8;--muted:#4A5278;--muted2:#7880A8;
+  --gold:#F4B942;--red:#E8445A;
+  --acc:#7C5CFC;--acc2:#5B8EF8;
+  --sw:230px;--r:16px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden}
+button{font-family:'DM Sans',sans-serif}
+
+/* ══ BACKGROUND ══ */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-layer{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
+.bg-layer.on{opacity:1}
+/* Movies: nebula purple-indigo */
+.bg-layer{position:absolute;inset:0;opacity:0;transition:opacity 1.3s ease;overflow:hidden}
+.bg-layer.on{opacity:1}
+.bg-layer svg{position:absolute;inset:0;width:100%;height:100%}
+/* base tone under each painted scene */
+#bl-home{background:linear-gradient(160deg,#0B0716 0%,#05070D 55%,#070512 100%)}
+#bl-movies{background:linear-gradient(160deg,#0D0818 0%,#05070D 55%,#0A0614 100%)}
+#bl-series{background:linear-gradient(160deg,#061214 0%,#050A0D 55%,#04100F 100%)}
+#bl-anime{background:linear-gradient(160deg,#12071A 0%,#08050F 55%,#170A18 100%)}
+#bl-books{background:linear-gradient(160deg,#140D02 0%,#090700 55%,#160E03 100%)}
+
+/* drifting light-ray sweep, reused across scenes with different tint via currentColor-ish opacity */
+.ray-sweep{position:absolute;inset:-20% -10%;mix-blend-mode:screen;animation:raySweep 22s ease-in-out infinite}
+@keyframes raySweep{0%,100%{transform:translateX(-3%) translateY(0)}50%{transform:translateX(3%) translateY(-1.5%)}}
+
+/* floating dust / ember particles, generic reusable */
+.spark{position:absolute;border-radius:50%;animation:sparkFloat ease-in-out infinite}
+@keyframes sparkFloat{0%,100%{transform:translateY(0) translateX(0);opacity:0.15}50%{transform:translateY(-22px) translateX(8px);opacity:0.7}}
+
+/* Animated stars */
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle linear infinite}
+@keyframes twinkle{0%,100%{opacity:0.1;transform:scale(1)}50%{opacity:0.8;transform:scale(1.4)}}
+.shoot{position:absolute;width:2px;height:80px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0.8));border-radius:2px;animation:shoot linear forwards;opacity:0}
+@keyframes shoot{0%{opacity:0;transform:rotate(-45deg) translateY(0)}5%{opacity:1}100%{opacity:0;transform:rotate(-45deg) translateY(700px)}}
+
+/* Floating particles for anime */
+.petal{position:absolute;border-radius:50% 5px 50% 5px;animation:petalDrift ease-in-out infinite;opacity:0}
+@keyframes petalDrift{0%{opacity:0;transform:translateY(0) rotate(0deg) translateX(0)}15%{opacity:0.9}85%{opacity:0.4}100%{opacity:0;transform:translateY(105vh) rotate(540deg) translateX(80px)}}
+
+/* ══ LAYOUT ══ */
+body{display:flex}
+.sidebar{
+  position:relative;z-index:20;flex-shrink:0;
+  width:var(--sw);
+  background:rgba(5,7,13,0.82);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:0;overflow:hidden;
+  transition:width 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.sidebar.slim{width:68px}
+
+.sb-top{padding:22px 20px 16px;border-bottom:1px solid var(--border)}
+.sb-logo{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.sb-logo-mark{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#7C5CFC 0%,#5B8EF8 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px rgba(124,92,252,0.45);
+}
+.sb-name{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
+  background:linear-gradient(90deg,#C4B5FD,#93C5FD);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.sb-tag{font-size:10px;color:var(--muted);margin-left:46px;white-space:nowrap}
+.sidebar.slim .sb-name,.sidebar.slim .sb-tag{display:none}
+.sidebar.slim .sb-logo{justify-content:center}
+
+.sb-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 10px;scrollbar-width:none}
+.sb-scroll::-webkit-scrollbar{display:none}
+
+.sb-label{font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;padding:10px 10px 4px;white-space:nowrap}
+.sidebar.slim .sb-label{display:none}
+
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 10px;border-radius:10px;
+  cursor:pointer;border:none;background:none;
+  color:var(--muted2);font-size:13px;font-weight:500;
+  width:100%;text-align:left;position:relative;
+  transition:background 0.2s,color 0.2s;white-space:nowrap;overflow:hidden;
+}
+.nav-item:hover{background:rgba(255,255,255,0.055);color:var(--text)}
+.nav-item.active{background:linear-gradient(90deg,rgba(124,92,252,0.18) 0%,rgba(124,92,252,0.06) 100%);color:#C4B5FD}
+.nav-item.active .nav-ic svg path,.nav-item.active .nav-ic svg circle,.nav-item.active .nav-ic svg rect,.nav-item.active .nav-ic svg polyline,.nav-item.active .nav-ic svg line{stroke:#C4B5FD}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:0 3px 3px 0;background:var(--acc)}
+.nav-ic{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-ic svg{width:18px;height:18px}
+.nav-txt{white-space:nowrap}
+.sidebar.slim .nav-txt{display:none}
+.sidebar.slim .nav-item{justify-content:center;padding:10px}
+.sidebar.slim .nav-item::before{display:none}
+
+.sb-divider{height:1px;background:var(--border);margin:6px 0}
+
+.sb-bottom{padding:12px 10px;border-top:1px solid var(--border)}
+.sb-toggle{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;
+  cursor:pointer;border:none;background:rgba(255,255,255,0.04);
+  color:var(--muted2);font-size:12px;width:100%;
+  transition:all 0.18s;
+}
+.sb-toggle:hover{background:rgba(255,255,255,0.07);color:var(--text)}
+.sidebar.slim .sb-toggle{justify-content:center}
+.sidebar.slim .sb-toggle span{display:none}
+
+/* ══ MAIN ══ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:5}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 24px;
+  background:rgba(5,7,13,0.65);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tb-title-wrap{min-width:0}
+.tb-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;
+  background:linear-gradient(90deg,var(--text),var(--muted2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.tb-sub{font-size:11px;color:var(--muted);font-style:italic;white-space:nowrap}
+.search-wrap{position:relative;flex:1;max-width:320px}
+.search-inp{
+  width:100%;padding:9px 14px 9px 38px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  border-radius:40px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all 0.2s;
+}
+.search-inp::placeholder{color:var(--muted)}
+.search-inp:focus{border-color:rgba(124,92,252,0.5);background:rgba(124,92,252,0.07);box-shadow:0 0 0 3px rgba(124,92,252,0.1)}
+.search-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:0.4}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap}
+.fpill{
+  padding:6px 13px;border-radius:30px;font-size:11px;font-weight:500;
+  border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--muted2);
+  cursor:pointer;transition:all 0.18s;white-space:nowrap;
+}
+.fpill:hover{border-color:var(--border2);color:var(--text)}
+.fpill.on{background:var(--acc);border-color:transparent;color:white;box-shadow:0 0 14px rgba(124,92,252,0.4)}
+.add-btn{
+  display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:30px;
+  background:linear-gradient(135deg,#7C5CFC,#5B8EF8);
+  color:white;font-size:13px;font-weight:600;border:none;cursor:pointer;
+  transition:all 0.2s;white-space:nowrap;flex-shrink:0;
+  box-shadow:0 0 22px rgba(124,92,252,0.35);
+}
+.add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(124,92,252,0.55)}
+.add-btn svg{width:15px;height:15px}
+
+/* ══ CONTENT AREA ══ */
+.content{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.07) transparent}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
+
+.page{display:none}
+.page.on{display:block}
+
+/* ══ HOME PAGE ══ */
+.home-hero{
+  position:relative;height:240px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(124,92,252,0.15) 0%,rgba(5,7,13,0) 100%);
+}
+.hero-cityscape{position:absolute;inset:0;overflow:hidden}
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(0deg,#05070D 0%,rgba(5,7,13,0.4) 50%,transparent 100%);
+  z-index:2;
+}
+.hero-content{position:absolute;bottom:28px;left:32px;z-index:3}
+.hero-greet{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;color:white;line-height:1.1}
+.hero-greet em{font-style:normal;background:linear-gradient(90deg,#C4B5FD,#93C5FD);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-quote{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:rgba(255,255,255,0.5);margin-top:6px}
+
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:20px 24px}
+.stat-card{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,0.035);border:1px solid var(--border);
+  border-radius:14px;padding:14px 16px;
+  transition:all 0.22s cubic-bezier(0.4,0,0.2,1);cursor:default;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--sc,#7C5CFC);opacity:0.5;transition:opacity 0.22s;
+}
+.stat-card:hover{background:rgba(255,255,255,0.065);border-color:var(--border2);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,0.35)}
+.stat-card:hover::before{opacity:1}
+.stat-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.stat-ico svg{width:14px;height:14px}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.stat-sub{font-size:10px;margin-top:4px;font-weight:500}
+
+/* ══ STATISTICS PAGE ══ */
+.stats-hero-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stats-hero-card{
+  background:linear-gradient(160deg,rgba(255,255,255,0.05) 0%,rgba(255,255,255,0.015) 100%);
+  border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;
+}
+.stats-hero-val{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:800;
+  background:linear-gradient(90deg,var(--text),var(--muted2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stats-hero-lbl{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
+
+.stats-section{margin-bottom:26px}
+.stats-section-title{
+  font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.stats-section-title svg{width:16px;height:16px;color:var(--acc)}
+
+.stats-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stats-cat-panel{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:16px;
+}
+.stats-cat-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.stats-cat-ico{font-size:16px}
+.stats-cat-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700}
+.stats-cat-total{margin-left:auto;font-size:18px;font-weight:800;color:var(--acc)}
+
+.status-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.status-chip{
+  padding:4px 10px;border-radius:20px;font-size:10.5px;font-weight:600;
+  background:rgba(255,255,255,0.06);color:var(--muted2);display:flex;align-items:center;gap:5px;
+}
+.status-chip .dot{width:6px;height:6px;border-radius:50%}
+
+.stats-empty-note{font-size:11px;color:var(--muted);padding:8px 0}
+
+.rating-dist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.rating-dist-lbl{font-size:10.5px;color:var(--muted2);width:32px;flex-shrink:0;text-align:right}
+.rating-dist-track{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.rating-dist-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#F4B942,#FCD34D)}
+.rating-dist-count{font-size:10px;color:var(--muted);width:22px;flex-shrink:0}
+
+.rewatch-list{display:flex;flex-direction:column;gap:8px}
+.rewatch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:10px}
+.rewatch-thumb{width:28px;height:38px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(150deg,rgba(124,92,252,0.2),rgba(91,142,248,0.1));object-fit:cover}
+.rewatch-name{font-size:12px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rewatch-count{font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0}
+
+.home-section{padding:0 24px 20px}
+.home-section-head{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.home-tabs{display:flex;gap:4px}
+.htab{padding:7px 18px;border-radius:30px;font-size:13px;font-weight:500;border:none;background:transparent;color:var(--muted2);cursor:pointer;transition:all 0.18s}
+.htab.on{background:rgba(124,92,252,0.15);color:#C4B5FD}
+.htab:hover:not(.on){color:var(--text)}
+.hfilters{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.hchip{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);color:var(--muted2);background:transparent;cursor:pointer;transition:all 0.15s}
+.hchip:hover{border-color:var(--border2);color:var(--text)}
+.hchip.on{background:rgba(124,92,252,0.15);border-color:rgba(124,92,252,0.3);color:#C4B5FD}
+
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:16px}
+
+/* Bottom widgets */
+.home-widgets{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;padding:0 24px 28px}
+.widget{
+  background:linear-gradient(160deg,rgba(255,255,255,0.045) 0%,rgba(255,255,255,0.015) 100%);
+  border:1px solid var(--border);border-radius:16px;padding:18px;overflow:hidden;
+  transition:border-color 0.2s;
+}
+.widget:hover{border-color:var(--border2)}
+.widget-title{font-size:11.5px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:0.9px;margin-bottom:14px;display:flex;align-items:center;gap:7px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.widget-title svg{width:13px;height:13px;opacity:0.6;color:var(--acc)}
+
+/* Activity */
+.act-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border:none}
+.act-thumb{width:34px;height:46px;border-radius:6px;object-fit:cover;flex-shrink:0;background:linear-gradient(150deg,rgba(124,92,252,0.22),rgba(91,142,248,0.12));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 1px 0 rgba(255,255,255,0.06) inset}
+.act-info{flex:1;min-width:0}
+.act-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.act-fav{color:var(--gold);font-size:12px}
+
+/* Quote */
+.quote-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:19px;font-weight:600;color:rgba(255,255,255,0.88);line-height:1.5;margin-bottom:14px;position:relative;padding-left:4px}
+.quote-from{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0.3px}
+.widget#w-quote{display:flex;flex-direction:column;justify-content:center;min-height:140px;border-left:3px solid var(--acc)}
+
+/* Genre bars */
+.genre-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.genre-bar-label{font-size:11px;color:var(--muted2);width:55px;flex-shrink:0}
+.genre-bar-track{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.genre-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.genre-bar-pct{font-size:10px;color:var(--muted);width:28px;text-align:right;flex-shrink:0}
+
+/* Cal */
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cal-month{font-size:12px;font-weight:600;color:var(--text)}
+.cal-arrow{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;line-height:1}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{font-size:9px;color:var(--muted);text-align:center;padding:2px 0;font-weight:600}
+.cal-cell{
+  width:100%;aspect-ratio:1;border-radius:4px;font-size:9px;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+  cursor:default;transition:all 0.15s;
+}
+.cal-cell.has{background:rgba(124,92,252,0.3);color:white;font-weight:600;cursor:pointer}
+.cal-cell.has:hover{background:rgba(124,92,252,0.6)}
+.cal-cell.today{border:1px solid rgba(124,92,252,0.5)}
+.cal-cell.other{opacity:0.3}
+
+/* ══ SECTION PAGES ══ */
+.sec-content{padding:20px 24px}
+.sec-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.sort-select{
+  margin-left:auto;padding:6px 30px 6px 13px;border-radius:30px;font-size:11.5px;font-weight:500;
+  border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted2);
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237a7fa0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:12px;
+}
+.sort-select:hover{border-color:var(--border2);color:var(--text)}
+.sort-select option{background:#111320;color:var(--text)}
+
+.watching-section{margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.watching-head{
+  font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
+  color:#93C5FD;letter-spacing:0.3px;margin-bottom:14px;
+  display:flex;align-items:center;gap:7px;
+}
+.watching-head::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(147,197,253,0.3),transparent)}
+.watching-grid{margin-bottom:0}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+
+/* ══ CARDS — 180° FLIP SYSTEM ══ */
+.card-outer{
+  height:285px;cursor:pointer;
+  perspective:1400px;
+  position:relative;
+  transition:transform 0.25s cubic-bezier(0.34,1.4,0.4,1);
+}
+.card-outer:hover{transform:translateY(-8px) scale(1.03)}
+
+.flip-inner{
+  position:relative;width:100%;height:100%;
+  border-radius:var(--r);
+  transition:transform 0.6s cubic-bezier(0.4,0.1,0.2,1),box-shadow 0.3s;
+  transform-style:preserve-3d;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45),0 1px 0 rgba(255,255,255,0.04) inset;
+}
+.card-outer:hover .flip-inner:not(.flipped){box-shadow:0 20px 44px rgba(0,0,0,0.65),0 0 38px var(--glow,rgba(124,92,252,0.4)),0 1px 0 rgba(255,255,255,0.08) inset}
+.flip-inner.flipped{
+  transform:rotateY(180deg);
+  box-shadow:0 20px 50px rgba(0,0,0,0.65),0 0 40px var(--glow,rgba(124,92,252,0.25));
+}
+
+.flip-face{
+  position:absolute;inset:0;
+  border-radius:var(--r);
+  overflow:hidden;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+.flip-front{background:var(--cgrad)}
+.flip-back{
+  transform:rotateY(180deg);
+  background:var(--cgrad-back,linear-gradient(155deg,#12162C 0%,#0C0E1E 100%));
+  display:flex;flex-direction:column;
+}
+
+/* "tap to flip" affordance shown on hover, front face only */
+.flip-front::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:26px;height:26px;margin:-13px 0 0 -13px;
+  border-radius:50%;background:rgba(255,255,255,0.12);backdrop-filter:blur(4px);
+  opacity:0;transition:opacity 0.25s;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='1 4 1 10 7 10'/%3E%3Cpolyline points='23 20 23 14 17 14'/%3E%3Cpath d='M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;background-size:12px;
+  z-index:6;
+}
+.card-outer:hover .flip-inner:not(.flipped) .flip-front::after{opacity:0.85}
+
+/* Front face content layers — poster, title, tags, rating */
+.cover-bg{position:absolute;inset:0;background:var(--cgrad)}
+.cover-poster-area{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:calc(100% - 20px);height:150px;border-radius:10px;
+  overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.6);
+}
+.cover-poster-area img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:52px;opacity:0.55;background:rgba(255,255,255,0.06);filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))}
+.cover-bottom{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:8px 11px 11px;
+  background:linear-gradient(0deg,rgba(0,0,0,0.9) 0%,rgba(0,0,0,0.5) 60%,transparent 100%);
+}
+.franchise-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-bottom:5px;
+  background:rgba(124,92,252,0.25);color:#C4B5FD;letter-spacing:0.2px;
+  cursor:pointer;transition:background 0.15s;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.franchise-badge:hover{background:rgba(124,92,252,0.42)}
+
+.franchise-banner{
+  display:flex;align-items:center;gap:8px;margin-bottom:16px;
+  padding:9px 14px;border-radius:10px;font-size:12.5px;color:#C4B5FD;
+  background:rgba(124,92,252,0.1);border:1px solid rgba(124,92,252,0.25);
+}
+.franchise-banner-name{font-weight:700}
+.franchise-banner button{
+  margin-left:auto;background:rgba(255,255,255,0.08);border:none;border-radius:20px;
+  padding:4px 11px;font-size:11px;font-weight:600;color:var(--text);cursor:pointer;
+  transition:background 0.15s;
+}
+.franchise-banner button:hover{background:rgba(255,255,255,0.15)}
+.cover-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:white;line-height:1.25;margin-bottom:5px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cover-creator{font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cover-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px}
+.chip{font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,0.13);color:rgba(255,255,255,0.8);letter-spacing:0.2px}
+.ep-progress{margin-bottom:6px}
+.ep-progress-bar{width:100%;height:4px;border-radius:3px;background:rgba(255,255,255,0.16);overflow:hidden}
+.ep-progress-fill{height:100%;background:linear-gradient(90deg,#7C5CFC,#22D3EE);border-radius:3px;transition:width 0.3s}
+.ep-progress-txt{font-size:8.5px;color:rgba(255,255,255,0.55);margin-top:2px;text-align:right}
+.cover-foot{display:flex;align-items:center;justify-content:space-between}
+.c-rating{font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:3px}
+.c-year{font-size:10px;color:rgba(255,255,255,0.4)}
+
+/* Right/back face = review content, dark "paper" leaf */
+.flip-review-face{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding:16px 14px 14px;
+}
+
+/* Fav + plan badge overlay (above everything) */
+.card-fav{
+  position:absolute;top:8px;right:8px;z-index:10;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);
+  border:none;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.2s;
+}
+.card-fav:hover{transform:scale(1.25)}
+.card-fav svg{width:13px;height:13px}
+.plan-tag{
+  position:absolute;top:8px;left:8px;z-index:10;
+  padding:3px 8px;border-radius:6px;
+  background:rgba(6,182,212,0.85);
+  font-size:8px;font-weight:700;color:white;letter-spacing:0.8px;text-transform:uppercase;
+  backdrop-filter:blur(6px);
+}
+.plan-tag.st-watching{background:rgba(91,142,248,0.88)}
+.plan-tag.st-rewatch{background:rgba(168,85,247,0.88)}
+.plan-tag.st-dropped{background:rgba(232,68,90,0.88)}
+
+/* Review face content (right page) */
+.bk-in-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;padding-right:26px} /* padding-right clears the fav ⭐ button pinned top-right */
+.bk-in-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:white;line-height:1.25;flex:1}
+.bk-in-score{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:var(--gold);flex-shrink:0;line-height:1}
+/* Review text now SCROLLS instead of being cut off after 4 lines — long reviews stay
+   fully readable inside the fixed card height. min-height:0 is required so this flex
+   child can actually shrink and scroll instead of stretching the whole card open. */
+.bk-review{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;
+  color:rgba(255,255,255,0.62);line-height:1.5;flex:1;min-height:0;
+  overflow-y:auto;padding-right:4px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.18) transparent;
+}
+.bk-review::-webkit-scrollbar{width:4px}
+.bk-review::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:3px}
+.bk-review.empty{font-style:normal;font-family:'DM Sans',sans-serif;color:var(--muted);font-size:10.5px;text-align:center;display:flex;align-items:center;justify-content:center;flex:1}
+.bk-quote{font-size:10px;color:rgba(255,255,255,0.35);font-style:italic;padding:5px 7px;border-left:2px solid rgba(255,255,255,0.1);margin-top:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex-shrink:0}
+.bk-divider{height:1px;background:rgba(255,255,255,0.07);margin:7px 0}
+.bk-rows{display:flex;flex-direction:column;gap:3px}
+.bk-row{display:flex;justify-content:space-between;font-size:9.5px}
+.bk-rl{color:var(--muted)}.bk-rv{color:var(--text);font-weight:500}
+.bk-acts{display:flex;gap:5px;margin-top:7px}
+.bk-act{flex:1;padding:5px 4px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:var(--text);font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:600;cursor:pointer;transition:all 0.18s}
+.bk-act:hover{background:rgba(255,255,255,0.1)}
+.bk-act.del:hover{background:rgba(232,68,90,0.15);border-color:rgba(232,68,90,0.3);color:#fca5a5}
+
+/* 12 dual-gradient themes */
+.g0{--cgrad:linear-gradient(150deg,#1A0840 0%,#2E1480 35%,#0D2060 75%,#05070D 100%);--glow:rgba(124,92,252,0.3);--cgrad-back:linear-gradient(155deg,#042E2C 0%,#0A4A44 40%,#062024 100%)}
+.g1{--cgrad:linear-gradient(150deg,#0A3020 0%,#0E6840 35%,#0A1A50 75%,#05070D 100%);--glow:rgba(16,185,129,0.3);--cgrad-back:linear-gradient(155deg,#380A2E 0%,#5C1050 40%,#1E051C 100%)}
+.g2{--cgrad:linear-gradient(150deg,#3D0A10 0%,#8A1020 35%,#200830 75%,#05070D 100%);--glow:rgba(232,68,90,0.3);--cgrad-back:linear-gradient(155deg,#062038 0%,#0A3860 40%,#041625 100%)}
+.g3{--cgrad:linear-gradient(150deg,#0A1850 0%,#1038B0 35%,#1A0840 75%,#05070D 100%);--glow:rgba(91,142,248,0.3);--cgrad-back:linear-gradient(155deg,#3A2400 0%,#6B4200 40%,#1E1200 100%)}
+.g4{--cgrad:linear-gradient(150deg,#2A0A58 0%,#6020B0 35%,#220A38 75%,#05070D 100%);--glow:rgba(168,85,247,0.35);--cgrad-back:linear-gradient(155deg,#0A2E14 0%,#125024 40%,#051C0A 100%)}
+.g5{--cgrad:linear-gradient(150deg,#0A2C18 0%,#136820 35%,#1A1A08 75%,#05070D 100%);--glow:rgba(34,197,94,0.3);--cgrad-back:linear-gradient(155deg,#380A38 0%,#5C1058 40%,#1E051E 100%)}
+.g6{--cgrad:linear-gradient(150deg,#2C1800 0%,#7A3A00 35%,#301200 75%,#05070D 100%);--glow:rgba(245,158,11,0.35);--cgrad-back:linear-gradient(155deg,#04263C 0%,#08466C 40%,#041A28 100%)}
+.g7{--cgrad:linear-gradient(150deg,#042838 0%,#065E80 35%,#0A2040 75%,#05070D 100%);--glow:rgba(14,165,233,0.35);--cgrad-back:linear-gradient(155deg,#3A1004 0%,#682008 40%,#200A02 100%)}
+.g8{--cgrad:linear-gradient(150deg,#3A0608 0%,#921020 35%,#20000E 75%,#05070D 100%);--glow:rgba(225,29,72,0.35);--cgrad-back:linear-gradient(155deg,#062E28 0%,#0A4E44 40%,#041E1A 100%)}
+.g9{--cgrad:linear-gradient(150deg,#0A1C2E 0%,#104265 35%,#203050 75%,#05070D 100%);--glow:rgba(20,184,166,0.3);--cgrad-back:linear-gradient(155deg,#341008 0%,#5C1C0C 40%,#1C0804 100%)}
+.g10{--cgrad:linear-gradient(150deg,#1C0A38 0%,#4C1088 35%,#0A2035 75%,#05070D 100%);--glow:rgba(124,58,237,0.35);--cgrad-back:linear-gradient(155deg,#08301C 0%,#0C5230 40%,#041C10 100%)}
+.g11{--cgrad:linear-gradient(150deg,#2C1E00 0%,#806510 35%,#302008 75%,#05070D 100%);--glow:rgba(234,179,8,0.3);--cgrad-back:linear-gradient(155deg,#0C0A3A 0%,#181064 40%,#08061E 100%)}
+
+/* ══ EMPTY STATE ══ */
+.empty-state{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px;text-align:center;gap:8px}
+.empty-ring{
+  width:76px;height:76px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,rgba(124,92,252,0.14) 0%,transparent 70%);
+  border:1px solid rgba(124,92,252,0.15);
+  margin-bottom:6px;
+}
+.empty-state .ei{font-size:32px;opacity:0.55}
+.empty-state h3{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;color:var(--muted2)}
+.empty-state p{font-size:12.5px;color:var(--muted)}
+.empty-cta{
+  margin-top:10px;padding:8px 18px;border-radius:30px;
+  background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);
+  color:#C4B5FD;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.empty-cta:hover{background:rgba(124,92,252,0.22);transform:translateY(-1px)}
+
+/* ══ MODAL ══ */
+.ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.72);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.ov.open{opacity:1;pointer-events:all}
+.modal{
+  background:linear-gradient(160deg,#0D1024 0%,#0A0D1C 60%);
+  border:1px solid var(--border2);border-radius:22px;width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:28px;
+  transform:scale(0.95) translateY(10px);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.07) transparent;
+  box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 60px rgba(124,92,252,0.08);
+}
+.ov.open .modal{transform:scale(1) translateY(0)}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.mt{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
+.mx{background:rgba(255,255,255,0.07);border:none;border-radius:50%;width:30px;height:30px;color:var(--muted2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.mx:hover{background:rgba(255,255,255,0.12);color:var(--text)}
+.fg{margin-bottom:14px}
+.fl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.9px;display:block;margin-bottom:6px}
+.fi,.fs,.ft{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:all 0.2s}
+.fi:focus,.fs:focus,.ft:focus{border-color:rgba(124,92,252,0.5);background:rgba(124,92,252,0.06)}
+.fs option{background:#0D1124}
+.ft{resize:vertical;min-height:76px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.genre-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.genre-chip{
+  padding:6px 13px;border-radius:20px;font-size:12px;font-weight:500;
+  border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--muted2);
+  cursor:pointer;transition:all 0.15s;user-select:none;
+}
+.genre-chip:hover{border-color:var(--border2);color:var(--text)}
+.genre-chip.sel{background:var(--acc);border-color:transparent;color:white;box-shadow:0 0 10px rgba(124,92,252,0.35)}
+
+/* Poster section */
+.poster-section{border:1px solid var(--border);border-radius:12px;padding:16px;background:rgba(255,255,255,0.02);margin-bottom:14px}
+.poster-tabs{display:flex;gap:6px;margin-bottom:14px}
+.ptab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:none;color:var(--muted2);cursor:pointer;transition:all 0.18s}
+.ptab.on{background:rgba(124,92,252,0.15);border-color:rgba(124,92,252,0.3);color:#C4B5FD}
+.pane{display:none}.pane.on{display:block}
+
+/* TMDB */
+.tb-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;background:rgba(124,92,252,0.1);border:1px solid rgba(124,92,252,0.25);color:#C4B5FD;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;margin-bottom:10px}
+.tb-btn:hover{background:rgba(124,92,252,0.2)}.tb-btn:disabled{opacity:0.45;cursor:default}
+.tb-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.tb-r{cursor:pointer;border-radius:7px;overflow:hidden;border:2px solid transparent;transition:all 0.2s;background:rgba(255,255,255,0.04)}
+.tb-r:hover{border-color:rgba(124,92,252,0.5)}.tb-r.sel{border-color:#7C5CFC;box-shadow:0 0 14px rgba(124,92,252,0.4)}
+.tb-r img{width:100%;display:block;aspect-ratio:2/3;object-fit:cover}
+.tb-r-name{font-size:9px;padding:3px 4px;text-align:center;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Upload */
+.upload-area{
+  border:2px dashed rgba(255,255,255,0.1);border-radius:10px;padding:24px 16px;
+  text-align:center;cursor:pointer;transition:all 0.2s;position:relative;
+}
+.upload-area:hover{border-color:rgba(124,92,252,0.4);background:rgba(124,92,252,0.05)}
+.upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-area svg{margin:0 auto 8px;display:block;opacity:0.4;width:28px;height:28px}
+.upload-area p{font-size:12px;color:var(--muted)}
+.upload-area small{font-size:10px;color:var(--muted);opacity:0.6}
+.poster-preview{display:none;margin-top:10px;text-align:center}
+.poster-preview img{width:70px;height:100px;object-fit:cover;border-radius:8px;border:2px solid rgba(124,92,252,0.4);box-shadow:0 0 14px rgba(124,92,252,0.3)}
+
+/* Stars */
+.rating-input-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rating-num-input{width:80px;flex-shrink:0;text-align:center;font-weight:600}
+.rating-num-suffix{font-size:12px;color:var(--muted);flex-shrink:0}
+.star-display{
+  display:inline-flex;position:relative;font-size:22px;line-height:1;
+  letter-spacing:3px;flex-shrink:0;margin-left:4px;
+}
+.star-display .stars-back{color:rgba(255,255,255,0.12);white-space:nowrap}
+.star-display .stars-front{
+  position:absolute;top:0;left:0;color:var(--gold);white-space:nowrap;
+  overflow:hidden;width:0%; /* JS sets this to a % matching the rating, clipping the filled stars */
+}
+
+.mf{display:flex;gap:10px;margin-top:18px}
+.bc{flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.bc:hover{background:rgba(255,255,255,0.09)}
+.bs{flex:2;padding:11px;border-radius:10px;background:linear-gradient(135deg,#7C5CFC,#5B8EF8);border:none;color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 0 20px rgba(124,92,252,0.3)}
+.bs:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,92,252,0.5)}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:#101428;border:1px solid rgba(124,92,252,0.3);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:500;transform:translateY(14px);opacity:0;transition:all 0.3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ══ HAMBURGER (mobile only) ══ */
+.hamburger{
+  display:none;flex-shrink:0;width:36px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  color:var(--text);align-items:center;justify-content:center;cursor:pointer;
+}
+.hamburger svg{width:18px;height:18px}
+.sidebar-backdrop{
+  display:none;position:fixed;inset:0;z-index:19;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.sidebar-backdrop.on{opacity:1;pointer-events:all}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE — tablet & phone breakpoints
+   ══════════════════════════════════════════════ */
+@media (max-width:1000px){
+  .stats-row{grid-template-columns:repeat(3,1fr)}
+  .stats-hero-row{grid-template-columns:repeat(2,1fr)}
+  .stats-cat-grid{grid-template-columns:repeat(2,1fr)}
+  .home-widgets{grid-template-columns:1fr 1fr}
+}
+
+@media (max-width:860px){
+  body.is-mobile .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:20;
+    width:250px!important;
+    transform:translateX(-100%);
+    transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow:0 0 40px rgba(0,0,0,0.5);
+  }
+  body.is-mobile .sidebar.mobile-open{transform:translateX(0)}
+  body.is-mobile .sidebar.slim{width:250px!important}
+  body.is-mobile .sidebar.slim .sb-name,
+  body.is-mobile .sidebar.slim .sb-tag,
+  body.is-mobile .sidebar.slim .nav-txt,
+  body.is-mobile .sidebar.slim .sb-label,
+  body.is-mobile .sidebar.slim .sb-toggle span{display:revert}
+  body.is-mobile .sidebar.slim .sb-logo{justify-content:flex-start}
+  body.is-mobile .sidebar.slim .nav-item{justify-content:flex-start;padding:10px}
+  body.is-mobile .sb-bottom{display:none} /* collapse toggle replaced by hamburger */
+  .hamburger{display:flex}
+  body.is-mobile .sidebar-backdrop{display:block}
+
+  .topbar{padding:10px 14px;flex-wrap:wrap;gap:8px}
+  .tb-title{font-size:17px}
+  .tb-sub{display:none}
+  .search-wrap{order:3;max-width:none;flex:1 1 100%}
+  .filter-pills{order:4}
+  .add-btn span{display:none}
+  .add-btn{padding:9px 12px}
+
+  .sec-content{padding:14px 14px}
+  .home-hero{height:170px}
+  .hero-greet{font-size:26px}
+  .hero-content{left:18px;bottom:18px}
+  .stats-row{padding:14px;grid-template-columns:repeat(2,1fr);gap:8px}
+  .home-section{padding:0 14px 14px}
+  .home-widgets{grid-template-columns:1fr;padding:0 14px 20px}
+  .stats-hero-row{grid-template-columns:1fr 1fr;gap:8px}
+  .stats-cat-grid{grid-template-columns:1fr}
+
+  .cards-grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+  .card-outer{height:240px}
+  .cover-poster-area{height:120px}
+
+  .modal{width:94vw;padding:18px}
+  .f2{grid-template-columns:1fr}
+}
+
+@media (max-width:460px){
+  .cards-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .home-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div id="bg-canvas">
+  <div class="bg-layer on" id="bl-home"></div>
+  <div class="bg-layer" id="bl-movies"></div>
+  <div class="bg-layer" id="bl-series"></div>
+  <div class="bg-layer" id="bl-anime"></div>
+  <div class="bg-layer" id="bl-books"></div>
+</div>
+<div id="stars"></div>
+<div id="petals-host"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sb-top">
+    <div class="sb-logo">
+      <div class="sb-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg>
+      </div>
+      <span class="sb-name">CineVerse</span>
+    </div>
+    <div class="sb-tag">Every story leaves a mark.</div>
+  </div>
+  <div class="sb-scroll">
+    <div class="sb-label">Navigate</div>
+    <button class="nav-item active" id="ni-home" onclick="goPage('home')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span class="nav-txt">Home</span>
+    </button>
+    <button class="nav-item" id="ni-movies" onclick="goPage('movies')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/></svg></span>
+      <span class="nav-txt">Movies</span>
+    </button>
+    <button class="nav-item" id="ni-series" onclick="goPage('series')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+      <span class="nav-txt">Series</span>
+    </button>
+    <button class="nav-item" id="ni-anime" onclick="goPage('anime')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10"/><path d="M12 6c0 0-2 1-2 4s2 4 2 4"/><path d="M16 8c0 0-1 1-1 3"/><circle cx="19" cy="5" r="3"/></svg></span>
+      <span class="nav-txt">Anime</span>
+    </button>
+    <button class="nav-item" id="ni-books" onclick="goPage('books')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="nav-txt">Books</span>
+    </button>
+    <div class="sb-divider"></div>
+    <div class="sb-label">Library</div>
+    <button class="nav-item" id="ni-favourites" onclick="goPage('favourites')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+      <span class="nav-txt">Favourites</span>
+    </button>
+    <button class="nav-item" id="ni-watchlist" onclick="goPage('watchlist')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
+      <span class="nav-txt">Watchlist</span>
+    </button>
+    <button class="nav-item" id="ni-stats" onclick="goPage('stats')">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+      <span class="nav-txt">Statistics</span>
+    </button>
+  </div>
+  <div class="sb-bottom">
+    <button class="sb-toggle" onclick="toggleSidebar()">
+      <svg id="toggle-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>Collapse</span>
+    </button>
+  </div>
+</nav>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="tb-title-wrap">
+      <div class="tb-title" id="tb-title">Home</div>
+      <div class="tb-sub" id="tb-sub">Welcome back, Cinephile ✦</div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input class="search-inp" id="search-inp" placeholder="Search title, genre, director…" oninput="renderAll()">
+    </div>
+    <div class="filter-pills" id="fpills">
+      <button class="fpill on" onclick="setFilter('all',this)">All</button>
+      <button class="fpill" onclick="setFilter('favourites',this)">Favourites</button>
+      <button class="fpill" onclick="setFilter('plan',this)">To Watch</button>
+    </div>
+    <button class="add-btn" id="add-btn-el" onclick="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="add-lbl">Add</span>
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ═══ HOME PAGE ═══ -->
+    <div class="page on" id="pg-home">
+      <!-- Hero -->
+      <div class="home-hero">
+        <div class="hero-cityscape" id="hero-svg-host"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <div class="hero-greet">Welcome back, <em>Cinephile</em> ✨</div>
+          <div class="hero-quote">"I watched for the story. I stayed for the feeling."</div>
+        </div>
+      </div>
+      <!-- Stats -->
+      <div class="stats-row" id="stats-row"></div>
+      <!-- Recent cards -->
+      <div class="home-section">
+        <div class="home-section-head">
+          <div class="home-tabs">
+            <button class="htab on" onclick="homeTab('movies',this)">Movies</button>
+            <button class="htab" onclick="homeTab('series',this)">Series</button>
+            <button class="htab" onclick="homeTab('anime',this)">Anime</button>
+            <button class="htab" onclick="homeTab('books',this)">Books</button>
+          </div>
+          <div class="hfilters" id="home-chips">
+            <button class="hchip on" onclick="homeChip('all',this)">All</button>
+            <button class="hchip" onclick="homeChip('favourites',this)">★ Fav</button>
+            <button class="hchip" onclick="homeChip('plan',this)">🔖 To Watch</button>
+          </div>
+        </div>
+        <div class="home-grid" id="home-grid"></div>
+      </div>
+      <!-- Widgets -->
+      <div class="home-widgets">
+        <div class="widget" id="w-activity">
+          <div class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Recent Activity</div>
+          <div id="activity-list"></div>
+        </div>
+        <div class="widget" id="w-genres">
+          <div class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Top Genres</div>
+          <div id="genre-bars"></div>
+        </div>
+        <div class="widget" id="w-cal">
+          <div class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Watch Calendar</div>
+          <div id="cal-widget"></div>
+        </div>
+        <div class="widget" id="w-quote">
+          <div class="widget-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>Quote of the Day</div>
+          <div id="quote-widget"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MOVIES PAGE ═══ -->
+    <div class="page" id="pg-movies">
+      <div class="sec-content">
+        <div class="sec-filter-bar" id="fb-movies">
+          <button class="fpill on" onclick="setSF('movies','all',this)">All</button>
+          <button class="fpill" onclick="setSF('movies','Hollywood',this)">Hollywood</button>
+          <button class="fpill" onclick="setSF('movies','Bollywood',this)">Bollywood</button>
+          <button class="fpill" onclick="setSF('movies','Korean',this)">Korean</button>
+          <button class="fpill" onclick="setSF('movies','Japanese',this)">Japanese</button>
+          <button class="fpill" onclick="setSF('movies','Chinese',this)">Chinese</button>
+          <button class="fpill" onclick="setSF('movies','Tollywood',this)">Tollywood</button>
+          <select class="sort-select" id="sort-movies" onchange="setSortOrder('movies',this.value)">
+            <option value="date_desc">Recently Watched</option>
+            <option value="date_asc">Oldest Watched First</option>
+            <option value="alpha_asc">A → Z</option>
+            <option value="alpha_desc">Z → A</option>
+            <option value="rating_desc">Highest Rated</option>
+            <option value="rating_asc">Lowest Rated</option>
+            <option value="added_desc">Recently Added</option>
+          </select>
+        </div>
+        <div class="watching-section" id="watching-movies" style="display:none">
+          <div class="watching-head">👁 Currently Watching</div>
+          <div class="cards-grid watching-grid" id="watching-grid-movies"></div>
+        </div>
+        <div class="franchise-banner" id="franchise-banner-movies" style="display:none">
+          🔗 Showing <span class="franchise-banner-name"></span> only
+          <button onclick="clearFranchiseFilter('movies')">✕ Clear</button>
+        </div>
+        <div class="cards-grid" id="grid-movies"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SERIES PAGE ═══ -->
+    <div class="page" id="pg-series">
+      <div class="sec-content">
+        <div class="sec-filter-bar">
+          <button class="fpill on" onclick="setSF('series','all',this)">All</button>
+          <button class="fpill" onclick="setSF('series','Hollywood',this)">Hollywood</button>
+          <button class="fpill" onclick="setSF('series','Korean',this)">Korean</button>
+          <button class="fpill" onclick="setSF('series','Japanese',this)">Japanese</button>
+          <button class="fpill" onclick="setSF('series','Bollywood',this)">Bollywood</button>
+          <button class="fpill" onclick="setSF('series','Anime',this)">Anime</button>
+          <select class="sort-select" id="sort-series" onchange="setSortOrder('series',this.value)">
+            <option value="date_desc">Recently Watched</option>
+            <option value="date_asc">Oldest Watched First</option>
+            <option value="alpha_asc">A → Z</option>
+            <option value="alpha_desc">Z → A</option>
+            <option value="rating_desc">Highest Rated</option>
+            <option value="rating_asc">Lowest Rated</option>
+            <option value="added_desc">Recently Added</option>
+          </select>
+        </div>
+        <div class="watching-section" id="watching-series" style="display:none">
+          <div class="watching-head">👁 Currently Watching</div>
+          <div class="cards-grid watching-grid" id="watching-grid-series"></div>
+        </div>
+        <div class="franchise-banner" id="franchise-banner-series" style="display:none">
+          🔗 Showing <span class="franchise-banner-name"></span> only
+          <button onclick="clearFranchiseFilter('series')">✕ Clear</button>
+        </div>
+        <div class="cards-grid" id="grid-series"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ANIME PAGE ═══ -->
+    <div class="page" id="pg-anime">
+      <div class="sec-content">
+        <div class="sec-filter-bar">
+          <button class="fpill on" onclick="setSF('anime','all',this)">All</button>
+          <button class="fpill" onclick="setSF('anime','Shonen',this)">Shonen</button>
+          <button class="fpill" onclick="setSF('anime','Seinen',this)">Seinen</button>
+          <button class="fpill" onclick="setSF('anime','Slice of Life',this)">Slice of Life</button>
+          <button class="fpill" onclick="setSF('anime','Mecha',this)">Mecha</button>
+          <button class="fpill" onclick="setSF('anime','Isekai',this)">Isekai</button>
+          <select class="sort-select" id="sort-anime" onchange="setSortOrder('anime',this.value)">
+            <option value="date_desc">Recently Watched</option>
+            <option value="date_asc">Oldest Watched First</option>
+            <option value="alpha_asc">A → Z</option>
+            <option value="alpha_desc">Z → A</option>
+            <option value="rating_desc">Highest Rated</option>
+            <option value="rating_asc">Lowest Rated</option>
+            <option value="added_desc">Recently Added</option>
+          </select>
+        </div>
+        <div class="watching-section" id="watching-anime" style="display:none">
+          <div class="watching-head">👁 Currently Watching</div>
+          <div class="cards-grid watching-grid" id="watching-grid-anime"></div>
+        </div>
+        <div class="franchise-banner" id="franchise-banner-anime" style="display:none">
+          🔗 Showing <span class="franchise-banner-name"></span> only
+          <button onclick="clearFranchiseFilter('anime')">✕ Clear</button>
+        </div>
+        <div class="cards-grid" id="grid-anime"></div>
+      </div>
+    </div>
+
+    <!-- ═══ BOOKS PAGE ═══ -->
+    <div class="page" id="pg-books">
+      <div class="sec-content">
+        <div class="sec-filter-bar">
+          <button class="fpill on" onclick="setSF('books','all',this)">All</button>
+          <button class="fpill" onclick="setSF('books','Fiction',this)">Fiction</button>
+          <button class="fpill" onclick="setSF('books','Non-Fiction',this)">Non-Fiction</button>
+          <button class="fpill" onclick="setSF('books','Sci-Fi',this)">Sci-Fi</button>
+          <button class="fpill" onclick="setSF('books','Philosophy',this)">Philosophy</button>
+          <button class="fpill" onclick="setSF('books','Mystery',this)">Mystery</button>
+          <select class="sort-select" id="sort-books" onchange="setSortOrder('books',this.value)">
+            <option value="date_desc">Recently Read</option>
+            <option value="date_asc">Oldest Read First</option>
+            <option value="alpha_asc">A → Z</option>
+            <option value="alpha_desc">Z → A</option>
+            <option value="rating_desc">Highest Rated</option>
+            <option value="rating_asc">Lowest Rated</option>
+            <option value="added_desc">Recently Added</option>
+          </select>
+        </div>
+        <div class="watching-section" id="watching-books" style="display:none">
+          <div class="watching-head">👁 Currently Reading</div>
+          <div class="cards-grid watching-grid" id="watching-grid-books"></div>
+        </div>
+        <div class="franchise-banner" id="franchise-banner-books" style="display:none">
+          🔗 Showing <span class="franchise-banner-name"></span> only
+          <button onclick="clearFranchiseFilter('books')">✕ Clear</button>
+        </div>
+        <div class="cards-grid" id="grid-books"></div>
+      </div>
+    </div>
+
+    <!-- ═══ FAVOURITES PAGE (cross-category) ═══ -->
+    <div class="page" id="pg-favourites">
+      <div class="sec-content">
+        <div class="sec-filter-bar">
+          <button class="fpill on" onclick="setCrossFilter('favourites','all',this)">All</button>
+          <button class="fpill" onclick="setCrossFilter('favourites','movies',this)">Movies</button>
+          <button class="fpill" onclick="setCrossFilter('favourites','series',this)">Series</button>
+          <button class="fpill" onclick="setCrossFilter('favourites','anime',this)">Anime</button>
+          <button class="fpill" onclick="setCrossFilter('favourites','books',this)">Books</button>
+        </div>
+        <div class="cards-grid" id="grid-favourites"></div>
+      </div>
+    </div>
+
+    <!-- ═══ WATCHLIST PAGE (cross-category, status = plan) ═══ -->
+    <div class="page" id="pg-watchlist">
+      <div class="sec-content">
+        <div class="sec-filter-bar">
+          <button class="fpill on" onclick="setCrossFilter('watchlist','all',this)">All</button>
+          <button class="fpill" onclick="setCrossFilter('watchlist','movies',this)">Movies</button>
+          <button class="fpill" onclick="setCrossFilter('watchlist','series',this)">Series</button>
+          <button class="fpill" onclick="setCrossFilter('watchlist','anime',this)">Anime</button>
+          <button class="fpill" onclick="setCrossFilter('watchlist','books',this)">Books</button>
+        </div>
+        <div class="cards-grid" id="grid-watchlist"></div>
+      </div>
+    </div>
+
+    <!-- ═══ STATISTICS PAGE (cross-category) ═══ -->
+    <div class="page" id="pg-stats">
+      <div class="sec-content" id="stats-page-content">
+        <!-- filled dynamically by renderStatsPage() -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ ADD/EDIT MODAL ═══ -->
+<div class="ov" id="ov" onclick="ovClick(event)">
+<div class="modal">
+  <div class="mh">
+    <div class="mt" id="mt">Add Movie</div>
+    <button class="mx" onclick="closeModal()">✕</button>
+  </div>
+
+  <div class="fg">
+    <label class="fl">Title</label>
+    <input class="fi" id="f-title" placeholder="e.g. Interstellar, Attack on Titan…" oninput="titleChanged()">
+  </div>
+
+  <div class="poster-section">
+    <div class="poster-tabs">
+      <button class="ptab on" onclick="switchPTab('upload',this)">📁 Upload Image</button>
+      <button class="ptab" onclick="switchPTab('url',this)">🔗 Paste URL</button>
+      <button class="ptab" id="ptab-isbn-btn" style="display:none" onclick="switchPTab('isbn',this)">📚 By ISBN</button>
+      <button class="ptab" id="ptab-tmdb-btn" onclick="switchPTab('tmdb',this)">🔍 Auto-search (needs local server)</button>
+    </div>
+
+    <div class="pane on" id="pane-upload">
+      <div class="upload-area" id="upload-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p>Click or drag an image here</p>
+        <small id="upload-hint">JPG, PNG, WebP — max 8 MB.</small>
+        <input type="file" id="poster-file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="handleUpload(event)">
+      </div>
+    </div>
+
+    <div class="pane" id="pane-url">
+      <input class="fi" id="f-poster-url" placeholder="https://…image.jpg" oninput="urlPosterChanged()">
+      <div style="font-size:11px;color:var(--muted);margin-top:6px" id="url-hint">Paste any direct image link.</div>
+    </div>
+
+    <div class="pane" id="pane-isbn">
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55;margin-bottom:10px">
+        Type the book's ISBN (10 or 13 digits, found on the back cover or copyright page) and its cover loads automatically from Open Library — free, no key, no search step needed.
+      </div>
+      <input class="fi" id="f-isbn" placeholder="e.g. 9780441172719" inputmode="numeric" oninput="onIsbnInput()">
+      <button class="tb-btn" id="isbn-btn" onclick="lookupIsbnCover()" style="margin-top:9px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Load cover from ISBN
+      </button>
+      <div id="isbn-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        Don't know the ISBN? <a href="#" onclick="openIsbnFinder();return false" style="color:#C4B5FD;text-decoration:underline">Look it up on Open Library ↗</a> — search the title there, open the book's page, and its ISBN is listed under "ISBN" in the details.
+      </div>
+    </div>
+
+    <div class="pane" id="pane-tmdb">
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.6;margin-bottom:10px;padding:10px 12px;background:rgba(124,92,252,0.08);border:1px solid rgba(124,92,252,0.2);border-radius:8px">
+        Browsers block this kind of automatic search when a page is opened as a plain file (which is how this app runs). It only works if the app is served from a small local server instead of double-clicked.<br><br>
+        <strong style="color:#C4B5FD">One-time fix:</strong> open a terminal in this file's folder and run <code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:4px">python3 -m http.server</code>, then visit <code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:4px">http://localhost:8000</code> instead of opening the file directly. Auto-search will then work below.
+      </div>
+      <button class="tb-btn" id="tmdb-btn" onclick="doTMDB()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search TMDB for poster
+      </button>
+      <div class="tb-grid" id="tb-grid"></div>
+    </div>
+
+    <div class="poster-preview" id="poster-preview">
+      <img id="poster-preview-img" src="" alt="poster preview">
+    </div>
+  </div>
+
+  <div class="f2">
+    <div class="fg">
+      <label class="fl" id="lbl-region">Region / Industry</label>
+      <select class="fs" id="f-region">
+        <optgroup label="Region / Industry" id="region-group">
+          <option>Hollywood</option><option>Bollywood</option><option>Korean</option>
+          <option>Japanese</option><option>Chinese</option><option>Tollywood</option>
+          <option>Kollywood</option><option>Mollywood</option><option>Sandalwood</option>
+          <option>Spanish</option><option>French</option><option>Iranian</option>
+          <option>Turkish</option><option>Thai</option><option>Anime</option>
+          <option>Independent</option><option>Other</option>
+        </optgroup>
+        <optgroup label="Category" id="category-group" style="display:none">
+          <option>Fiction</option><option>Non-Fiction</option><option>Sci-Fi</option>
+          <option>Fantasy</option><option>Philosophy</option><option>Mystery</option>
+          <option>Biography</option><option>History</option><option>Self-Help</option>
+          <option>Poetry</option><option>Classic</option><option>Other</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">Year</label>
+      <input class="fi" type="number" id="f-year" placeholder="2024" min="1900" max="2040">
+    </div>
+  </div>
+
+  <div class="fg">
+    <label class="fl" id="lbl-genre">Genre</label>
+    <input type="hidden" id="f-genre">
+    <div class="genre-grid" id="genre-grid"></div>
+  </div>
+
+  <div class="fg" id="fg-director">
+    <label class="fl" id="lbl-director">Director / Author</label>
+    <input class="fi" id="f-director" placeholder="Christopher Nolan">
+  </div>
+
+  <div class="fg" id="fg-franchise">
+    <label class="fl" id="lbl-franchise">Franchise / Show Group</label>
+    <input class="fi" id="f-franchise" list="franchise-options" placeholder="e.g. Breaking Bad, Dune" oninput="onFranchiseInput()">
+    <datalist id="franchise-options"></datalist>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Optional — group seasons of a show or entries in a movie franchise together. Pick an existing one or type a new name.</div>
+  </div>
+
+  <div class="fg">
+    <label class="fl">Status</label>
+    <select class="fs" id="f-status">
+      <option value="watched" id="opt-watched">Watched ✓</option>
+      <option value="plan" id="opt-plan">Plan to Watch 🔖</option>
+      <option value="watching" id="opt-watching">Currently Watching 👁</option>
+      <option value="rewatch" id="opt-rewatch">Rewatching 🔁</option>
+      <option value="dropped">Dropped ✗</option>
+    </select>
+  </div>
+
+  <div class="f2" id="fg-episodes">
+    <div class="fg">
+      <label class="fl">Episodes Watched</label>
+      <input class="fi" type="number" id="f-ep-watched" min="0" placeholder="12">
+    </div>
+    <div class="fg">
+      <label class="fl">Total Episodes</label>
+      <input class="fi" type="number" id="f-ep-total" min="0" placeholder="24">
+    </div>
+  </div>
+
+  <div class="fg">
+    <label class="fl">Your Rating</label>
+    <div class="rating-input-row">
+      <input class="fi rating-num-input" type="number" id="f-rating-num" min="0" max="5" step="0.1" placeholder="4.6" oninput="onRatingNumInput()">
+      <span class="rating-num-suffix">/ 5</span>
+      <div class="star-display" id="star-display"></div>
+    </div>
+  </div>
+
+  <div class="fg">
+    <label class="fl">Your Review</label>
+    <textarea class="ft" id="f-review" placeholder="What made it unforgettable?"></textarea>
+  </div>
+
+  <div class="fg">
+    <label class="fl" id="lbl-quote">Favourite Quote</label>
+    <input class="fi" id="f-quote" placeholder='"Do not go gentle into that good night…"'>
+  </div>
+
+  <div class="f2">
+    <div class="fg">
+      <label class="fl" id="lbl-date">Date Watched</label>
+      <input class="fi" type="date" id="f-date">
+    </div>
+    <div class="fg">
+      <label class="fl" id="lbl-rewatch">Times Rewatched</label>
+      <input class="fi" type="number" id="f-rewatch" min="0" value="0">
+    </div>
+  </div>
+
+  <div class="mf">
+    <button class="bc" onclick="closeModal()">Cancel</button>
+    <button class="bs" onclick="saveEntry()">Save to Collection ✦</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════
+// INIT ANIMATED BACKGROUND
+// ══════════════════════════
+(function initBG(){
+  // Stars
+  const host=document.getElementById('stars');
+  for(let i=0;i<90;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()<0.15?2.5:Math.random()<0.4?1.5:1;
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;animation-duration:${2+Math.random()*5}s;animation-delay:${Math.random()*6}s`;
+    host.appendChild(s);
+  }
+  // Shooting stars every ~5s
+  function shootStar(){
+    const s=document.createElement('div');s.className='shoot';
+    s.style.cssText=`left:${20+Math.random()*60}%;top:${Math.random()*40}%;animation-duration:${0.8+Math.random()*0.5}s;`;
+    host.appendChild(s);
+    setTimeout(()=>s.remove(),1400);
+  }
+  setInterval(shootStar,4800);shootStar();
+
+  // Petals for anime
+  const ph=document.getElementById('petals-host');
+  ph.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 0.8s';
+  const cols=['#F9A8D4','#FBCFE8','#FDA4AF','#C4B5FD','#A78BFA','#FDE68A'];
+  for(let i=0;i<30;i++){
+    const p=document.createElement('div');p.className='petal';
+    const sz=5+Math.random()*9;
+    p.style.cssText=`left:${Math.random()*100}%;top:-20px;width:${sz}px;height:${sz*0.7}px;background:${cols[Math.floor(Math.random()*cols.length)]};animation-duration:${5+Math.random()*8}s;animation-delay:${Math.random()*10}s;opacity:0;position:absolute;`;
+    ph.appendChild(p);
+  }
+
+  // Warmer/cooler star tinting so it's not flat white dots
+  document.querySelectorAll('.star').forEach(s=>{
+    const tint=Math.random();
+    if(tint<0.3)s.style.background='#C4B5FD';
+    else if(tint<0.5)s.style.background='#93C5FD';
+    else if(tint<0.6)s.style.background='#FDE68A';
+  });
+
+  // ═══ PAINTED SCENES per section ═══
+  const scenes={
+    movies:`<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="spot1" cx="50%" cy="0%" r="75%"><stop offset="0%" stop-color="#9B7BFF" stop-opacity="0.55"/><stop offset="100%" stop-color="#9B7BFF" stop-opacity="0"/></radialGradient>
+        <radialGradient id="spot2" cx="15%" cy="90%" r="60%"><stop offset="0%" stop-color="#7BA6FF" stop-opacity="0.4"/><stop offset="100%" stop-color="#7BA6FF" stop-opacity="0"/></radialGradient>
+        <linearGradient id="curtainG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5A3AA8"/><stop offset="100%" stop-color="#241448"/></linearGradient>
+        <linearGradient id="filmStripG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4A3590" stop-opacity="0"/><stop offset="50%" stop-color="#7C5CFC" stop-opacity="0.65"/><stop offset="100%" stop-color="#4A3590" stop-opacity="0"/></linearGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#spot1)"/>
+      <rect width="1440" height="900" fill="url(#spot2)"/>
+      <!-- theatre curtains silhouette, left+right edges -->
+      <g opacity="0.85">
+        <path d="M0,0 Q40,150 20,300 Q50,450 10,600 Q45,750 0,900 L0,0 Z" fill="url(#curtainG)"/>
+        <path d="M110,0 Q75,180 100,340 Q65,500 95,650 Q70,800 110,900 L0,900 L0,0 Z" fill="url(#curtainG)" opacity="0.9"/>
+        <path d="M1440,0 Q1400,150 1420,300 Q1390,450 1430,600 Q1395,750 1440,900 L1440,0 Z" fill="url(#curtainG)"/>
+        <path d="M1330,0 Q1365,180 1340,340 Q1375,500 1345,650 Q1370,800 1330,900 L1440,900 L1440,0 Z" fill="url(#curtainG)" opacity="0.9"/>
+      </g>
+      <!-- floating filmstrip band, diagonal, drifting -->
+      <g class="ray-sweep" opacity="0.8">
+        <rect x="-100" y="180" width="1700" height="46" fill="url(#filmStripG)" transform="rotate(-6 700 200)"/>
+        <g fill="#2A1858" opacity="0.6" transform="rotate(-6 700 200)">
+          <rect x="20" y="185" width="18" height="12" rx="2"/><rect x="60" y="185" width="18" height="12" rx="2"/>
+          <rect x="100" y="185" width="18" height="12" rx="2"/><rect x="140" y="185" width="18" height="12" rx="2"/>
+          <rect x="20" y="207" width="18" height="12" rx="2"/><rect x="60" y="207" width="18" height="12" rx="2"/>
+          <rect x="100" y="207" width="18" height="12" rx="2"/><rect x="140" y="207" width="18" height="12" rx="2"/>
+        </g>
+      </g>
+      <!-- projector light cone from top -->
+      <polygon points="680,0 760,0 980,420 460,420" fill="#9B7BFF" opacity="0.14"/>
+      <!-- soft glow orbs -->
+      <g fill="#B69CFF" opacity="0.1">
+        <circle cx="200" cy="120" r="90"/><circle cx="1100" cy="300" r="130"/><circle cx="700" cy="700" r="160"/>
+      </g>
+    </svg>`,
+
+    series:`<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="auroraT1" cx="60%" cy="0%" r="70%"><stop offset="0%" stop-color="#2DD4BF" stop-opacity="0.5"/><stop offset="100%" stop-color="#2DD4BF" stop-opacity="0"/></radialGradient>
+        <radialGradient id="auroraT2" cx="10%" cy="85%" r="55%"><stop offset="0%" stop-color="#FBBF24" stop-opacity="0.3"/><stop offset="100%" stop-color="#FBBF24" stop-opacity="0"/></radialGradient>
+        <linearGradient id="wallG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1D5E58"/><stop offset="100%" stop-color="#0A2624"/></linearGradient>
+        <linearGradient id="screenGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EEAD4" stop-opacity="0.75"/><stop offset="100%" stop-color="#5EEAD4" stop-opacity="0"/></linearGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#auroraT1)"/>
+      <rect width="1440" height="900" fill="url(#auroraT2)"/>
+      <!-- soft aurora ribbons drifting -->
+      <g class="ray-sweep" opacity="0.75">
+        <path d="M-100,140 Q300,60 700,160 Q1100,260 1540,120 L1540,260 Q1100,400 700,300 Q300,200 -100,280 Z" fill="#2DD4BF" opacity="0.4"/>
+        <path d="M-100,260 Q400,180 800,280 Q1200,380 1540,240 L1540,340 Q1200,460 800,380 Q400,300 -100,380 Z" fill="#FBBF24" opacity="0.22"/>
+      </g>
+      <!-- distant TV/screen glow rectangle silhouette, bottom center -->
+      <rect x="560" y="640" width="320" height="180" rx="14" fill="url(#screenGlow)" opacity="0.8"/>
+      <rect x="580" y="660" width="280" height="140" rx="8" fill="#134E48" opacity="0.85"/>
+      <!-- room silhouette edges -->
+      <path d="M0,900 L0,500 Q200,470 0,900" fill="url(#wallG)" opacity="0.75"/>
+      <path d="M1440,900 L1440,500 Q1240,470 1440,900" fill="url(#wallG)" opacity="0.75"/>
+    </svg>`,
+
+    anime:`<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="animeMoon" cx="78%" cy="12%" r="10%"><stop offset="0%" stop-color="#FFF6F8" stop-opacity="1"/><stop offset="60%" stop-color="#F9A8D4" stop-opacity="0.45"/><stop offset="100%" stop-color="#F9A8D4" stop-opacity="0"/></radialGradient>
+        <radialGradient id="animeGlowBig" cx="70%" cy="5%" r="65%"><stop offset="0%" stop-color="#FB7185" stop-opacity="0.42"/><stop offset="100%" stop-color="#FB7185" stop-opacity="0"/></radialGradient>
+        <radialGradient id="animeGlowPurple" cx="5%" cy="85%" r="55%"><stop offset="0%" stop-color="#C4A0FF" stop-opacity="0.38"/><stop offset="100%" stop-color="#C4A0FF" stop-opacity="0"/></radialGradient>
+        <linearGradient id="toriiG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#D94E63"/><stop offset="100%" stop-color="#5A1A28"/></linearGradient>
+        <linearGradient id="neonSign" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F9A8D4"/><stop offset="100%" stop-color="#C4A0FF"/></linearGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#animeGlowBig)"/>
+      <rect width="1440" height="900" fill="url(#animeGlowPurple)"/>
+      <circle cx="1130" cy="110" r="120" fill="url(#animeMoon)"/>
+      <circle cx="1130" cy="110" r="46" fill="#FFFAFB" opacity="1"/>
+      <!-- torii gate silhouette, right of center -->
+      <g opacity="0.9" transform="translate(980,380)">
+        <rect x="-10" y="0" width="26" height="240" fill="url(#toriiG)"/>
+        <rect x="204" y="0" width="26" height="240" fill="url(#toriiG)"/>
+        <rect x="-40" y="-10" width="320" height="34" rx="4" fill="url(#toriiG)"/>
+        <rect x="-20" y="30" width="280" height="18" rx="3" fill="url(#toriiG)"/>
+      </g>
+      <!-- distant building silhouettes with neon window glow -->
+      <g opacity="0.8">
+        <rect x="0" y="560" width="130" height="340" fill="#3A1830"/>
+        <rect x="150" y="480" width="100" height="420" fill="#33142A"/>
+        <rect x="270" y="600" width="150" height="300" fill="#3A1830"/>
+        <rect x="1250" y="540" width="120" height="360" fill="#33142A"/>
+        <rect x="1150" y="620" width="90" height="280" fill="#3A1830"/>
+      </g>
+      <g fill="#F9A8D4" opacity="0.85">
+        <rect x="20" y="590" width="10" height="14" rx="1"/><rect x="45" y="590" width="10" height="14" rx="1"/>
+        <rect x="20" y="620" width="10" height="14" rx="1"/><rect x="70" y="620" width="10" height="14" rx="1"/>
+        <rect x="175" y="520" width="10" height="14" rx="1"/><rect x="200" y="550" width="10" height="14" rx="1"/>
+        <rect x="1270" y="580" width="10" height="14" rx="1"/><rect x="1295" y="610" width="10" height="14" rx="1"/>
+      </g>
+      <!-- neon sign strip -->
+      <rect x="300" y="640" width="8" height="90" rx="4" fill="url(#neonSign)" opacity="0.85"/>
+      <rect x="1180" y="660" width="8" height="70" rx="4" fill="url(#neonSign)" opacity="0.75"/>
+    </svg>`,
+
+    books:`<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="lampGlow" cx="72%" cy="18%" r="55%"><stop offset="0%" stop-color="#FBBF24" stop-opacity="0.5"/><stop offset="100%" stop-color="#FBBF24" stop-opacity="0"/></radialGradient>
+        <radialGradient id="warmCorner" cx="8%" cy="88%" r="55%"><stop offset="0%" stop-color="#D97706" stop-opacity="0.32"/><stop offset="100%" stop-color="#D97706" stop-opacity="0"/></radialGradient>
+        <linearGradient id="shelfG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C4A1E"/><stop offset="100%" stop-color="#2E1A08"/></linearGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#lampGlow)"/>
+      <rect width="1440" height="900" fill="url(#warmCorner)"/>
+      <!-- bookshelf silhouette along bottom -->
+      <g opacity="0.85">
+        <rect x="0" y="700" width="1440" height="200" fill="url(#shelfG)"/>
+        <g fill="#1E1206" opacity="0.9">
+          <rect x="40" y="640" width="26" height="90"/><rect x="72" y="620" width="20" height="110"/>
+          <rect x="98" y="655" width="30" height="75"/><rect x="290" y="630" width="24" height="100"/>
+          <rect x="320" y="615" width="18" height="115"/><rect x="1080" y="640" width="26" height="90"/>
+          <rect x="1112" y="618" width="22" height="112"/><rect x="1300" y="635" width="28" height="95"/>
+        </g>
+      </g>
+      <!-- warm lamp light cone -->
+      <polygon points="1040,80 1120,80 1260,420 900,420" fill="#FBBF24" opacity="0.16"/>
+    </svg>`
+  };
+
+  document.getElementById('bl-movies').innerHTML=scenes.movies;
+  document.getElementById('bl-series').innerHTML=scenes.series;
+  document.getElementById('bl-anime').innerHTML=scenes.anime;
+  document.getElementById('bl-books').innerHTML=scenes.books;
+  // home reuses the movies scene at lower intensity for continuity
+  document.getElementById('bl-home').innerHTML=scenes.movies;
+
+  // Floating warm sparks for books/series ambience
+  ['bl-series','bl-books'].forEach(id=>{
+    const host=document.getElementById(id);
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:absolute;inset:0;overflow:hidden';
+    for(let i=0;i<16;i++){
+      const sp=document.createElement('div');sp.className='spark';
+      const sz=2+Math.random()*3;
+      const col=id==='bl-books'?'#F4B942':'#5EEAD4';
+      sp.style.cssText=`left:${Math.random()*100}%;top:${40+Math.random()*55}%;width:${sz}px;height:${sz}px;background:${col};animation-duration:${4+Math.random()*5}s;animation-delay:${Math.random()*5}s;box-shadow:0 0 6px ${col}`;
+      wrap.appendChild(sp);
+    }
+    host.appendChild(wrap);
+  });
+
+  // Hero cityscape SVG
+  const heroHost=document.getElementById('hero-svg-host');
+  heroHost.innerHTML=`<svg viewBox="0 0 1200 240" preserveAspectRatio="xMidYMax meet" style="position:absolute;bottom:0;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a0a4a" stop-opacity="0.4"/><stop offset="100%" stop-color="#05070D" stop-opacity="0"/></linearGradient>
+      <linearGradient id="buildG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1860"/><stop offset="100%" stop-color="#0d0a1a"/></linearGradient>
+      <linearGradient id="buildG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0e2a50"/><stop offset="100%" stop-color="#050a14"/></linearGradient>
+    </defs>
+    <rect width="1200" height="240" fill="url(#skyG)"/>
+    <!-- City skyline buildings -->
+    <g opacity="0.7">
+      <rect x="0" y="160" width="45" height="80" fill="url(#buildG2)"/>
+      <rect x="10" y="140" width="20" height="20" fill="url(#buildG)"/>
+      <rect x="50" y="120" width="35" height="120" fill="url(#buildG)"/>
+      <rect x="58" y="100" width="18" height="25" fill="url(#buildG)"/>
+      <rect x="90" y="150" width="50" height="90" fill="url(#buildG2)"/>
+      <rect x="100" y="130" width="25" height="25" fill="url(#buildG2)"/>
+      <rect x="145" y="100" width="60" height="140" fill="url(#buildG)"/>
+      <rect x="155" y="80" width="35" height="25" fill="url(#buildG)"/>
+      <rect x="210" y="130" width="40" height="110" fill="url(#buildG2)"/>
+      <rect x="255" y="90" width="70" height="150" fill="url(#buildG)"/>
+      <rect x="265" y="70" width="40" height="25" fill="url(#buildG)"/>
+      <rect x="330" y="140" width="50" height="100" fill="url(#buildG2)"/>
+      <rect x="385" y="80" width="55" height="160" fill="url(#buildG)"/>
+      <rect x="395" y="60" width="30" height="25" fill="url(#buildG)"/>
+      <rect x="445" y="120" width="45" height="120" fill="url(#buildG2)"/>
+      <rect x="495" y="70" width="80" height="170" fill="url(#buildG)"/>
+      <rect x="505" y="50" width="55" height="25" fill="url(#buildG)"/>
+      <rect x="580" y="110" width="55" height="130" fill="url(#buildG2)"/>
+      <rect x="640" y="60" width="75" height="180" fill="url(#buildG)"/>
+      <rect x="650" y="40" width="45" height="25" fill="url(#buildG)"/>
+      <rect x="720" y="100" width="50" height="140" fill="url(#buildG2)"/>
+      <rect x="775" y="80" width="65" height="160" fill="url(#buildG)"/>
+      <rect x="785" y="60" width="40" height="25" fill="url(#buildG)"/>
+      <rect x="845" y="130" width="45" height="110" fill="url(#buildG2)"/>
+      <rect x="895" y="90" width="60" height="150" fill="url(#buildG)"/>
+      <rect x="905" y="70" width="35" height="25" fill="url(#buildG)"/>
+      <rect x="960" y="110" width="50" height="130" fill="url(#buildG2)"/>
+      <rect x="1015" y="75" width="70" height="165" fill="url(#buildG)"/>
+      <rect x="1025" y="55" width="45" height="25" fill="url(#buildG)"/>
+      <rect x="1090" y="130" width="50" height="110" fill="url(#buildG2)"/>
+      <rect x="1145" y="100" width="55" height="140" fill="url(#buildG)"/>
+    </g>
+    <!-- Window lights -->
+    <g fill="#F4B942" opacity="0.5">
+      <rect x="60" y="130" width="4" height="5" rx="1"/><rect x="68" y="130" width="4" height="5" rx="1"/>
+      <rect x="60" y="142" width="4" height="5" rx="1"/>
+      <rect x="160" y="110" width="4" height="5" rx="1"/><rect x="170" y="110" width="4" height="5" rx="1"/>
+      <rect x="160" y="122" width="4" height="5" rx="1"/><rect x="180" y="100" width="4" height="5" rx="1"/>
+      <rect x="260" y="100" width="4" height="5" rx="1"/><rect x="275" y="100" width="4" height="5" rx="1"/>
+      <rect x="390" y="88" width="4" height="5" rx="1"/><rect x="402" y="88" width="4" height="5" rx="1"/>
+      <rect x="390" y="100" width="4" height="5" rx="1"/>
+      <rect x="505" y="65" width="4" height="5" rx="1"/><rect x="518" y="65" width="4" height="5" rx="1"/>
+      <rect x="530" y="65" width="4" height="5" rx="1"/><rect x="505" y="80" width="4" height="5" rx="1"/>
+      <rect x="650" y="55" width="4" height="5" rx="1"/><rect x="663" y="55" width="4" height="5" rx="1"/>
+      <rect x="650" y="70" width="4" height="5" rx="1"/><rect x="680" y="55" width="4" height="5" rx="1"/>
+      <rect x="786" y="70" width="4" height="5" rx="1"/><rect x="800" y="70" width="4" height="5" rx="1"/>
+      <rect x="905" y="80" width="4" height="5" rx="1"/><rect x="920" y="80" width="4" height="5" rx="1"/>
+      <rect x="905" y="95" width="4" height="5" rx="1"/>
+      <rect x="1026" y="65" width="4" height="5" rx="1"/><rect x="1040" y="65" width="4" height="5" rx="1"/>
+      <rect x="1026" y="80" width="4" height="5" rx="1"/><rect x="1055" y="65" width="4" height="5" rx="1"/>
+    </g>
+    <!-- Shooting star / comet -->
+    <line x1="900" y1="30" x2="980" y2="80" stroke="white" stroke-width="1.5" opacity="0.6">
+      <animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="1s"/>
+    </line>
+    <circle cx="900" cy="30" r="3" fill="white" opacity="0.8">
+      <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite" begin="1s"/>
+    </circle>
+    <!-- Aurora glow -->
+    <ellipse cx="600" cy="60" rx="500" ry="80" fill="rgba(124,92,252,0.08)" opacity="0.6">
+      <animate attributeName="ry" values="80;100;80" dur="6s" repeatCount="indefinite"/>
+    </ellipse>
+  </svg>`;
+})();
+
+// ══════════════════════════
+// STATE
+// ══════════════════════════
+let curPage='home';let curFilter='all';
+let homeSection='movies';let homeChipFilter='all';
+let secFilters={movies:'all',series:'all',anime:'all',books:'all'};
+let franchiseFilters={movies:null,series:null,anime:null,books:null}; // active franchise-name filter per section, null = not filtering
+let crossFilters={favourites:'all',watchlist:'all'}; // category filter within the Favourites/Watchlist pages
+let sortOrders=JSON.parse(localStorage.getItem('cv3_sort')||'{"movies":"date_desc","series":"date_desc","anime":"date_desc","books":"date_desc"}');
+let editId=null;let rating=0;let posterUrl='';
+let sidebarSlim=false;
+
+const PAGES={
+  home:{title:'Home',sub:'Welcome back, Cinephile ✦',acc:'#7C5CFC',add:'Add'},
+  movies:{title:'Movies',sub:'Every frame tells your story',acc:'#7C5CFC',add:'Add Movie'},
+  series:{title:'Series',sub:'Binge. Repeat. Relive.',acc:'#14B8A6',add:'Add Series'},
+  anime:{title:'Anime',sub:'From Japan, with imagination.',acc:'#E8445A',add:'Add Anime'},
+  books:{title:'Books',sub:'Every page a new world.',acc:'#F4B942',add:'Add Book'},
+  favourites:{title:'Favourites',sub:'The ones that stayed with you.',acc:'#F4B942',add:'Add'},
+  watchlist:{title:'Watchlist',sub:'Next up in your queue.',acc:'#5B8EF8',add:'Add'},
+  stats:{title:'Statistics',sub:'Your whole cinematic universe, counted.',acc:'#7C5CFC',add:'Add'},
+};
+const CROSS_PAGES=['favourites','watchlist','stats']; // pages that pull from all four categories rather than one
+
+// Single source of truth for section-specific wording. Books use reading vocabulary
+// throughout (Author, Read, Date Finished, Times Reread) instead of inheriting the
+// movie/series/anime "watching" vocabulary, which made no sense on a book's card
+// ("Director: Frank Herbert", "Rewatched: 1×").
+const VOCAB={
+  movies:  {creator:'Director',region:'Region / Industry',genre:'Genre',date:'Date Watched',rewatch:'Times Rewatched',quote:'Favourite Quote',
+            statusDone:'Watched ✓',statusPlan:'Plan to Watch 🔖',statusProgress:'Currently Watching 👁',statusRepeat:'Rewatching 🔁',
+            reviewPh:'What made it unforgettable?',noReviewDone:'Add a review after you watch it!',planBadge:'To Watch',planEmpty:'🔖 Plan to watch',
+            doneRow:'Watched',repeatRow:'Rewatched'},
+  series:  {creator:'Director',region:'Region / Industry',genre:'Genre',date:'Date Watched',rewatch:'Times Rewatched',quote:'Favourite Quote',
+            statusDone:'Watched ✓',statusPlan:'Plan to Watch 🔖',statusProgress:'Currently Watching 👁',statusRepeat:'Rewatching 🔁',
+            reviewPh:'What made it unforgettable?',noReviewDone:'Add a review after you watch it!',planBadge:'To Watch',planEmpty:'🔖 Plan to watch',
+            doneRow:'Watched',repeatRow:'Rewatched'},
+  anime:   {creator:'Animation Studio',region:'Region / Industry',genre:'Genre',date:'Date Watched',rewatch:'Times Rewatched',quote:'Favourite Quote',
+            statusDone:'Watched ✓',statusPlan:'Plan to Watch 🔖',statusProgress:'Currently Watching 👁',statusRepeat:'Rewatching 🔁',
+            reviewPh:'What made it unforgettable?',noReviewDone:'Add a review after you watch it!',planBadge:'To Watch',planEmpty:'🔖 Plan to watch',
+            doneRow:'Watched',repeatRow:'Rewatched'},
+  books:   {creator:'Author',region:'Category',genre:'Genre',date:'Date Finished',rewatch:'Times Reread',quote:'Favourite Line',
+            statusDone:'Read ✓',statusPlan:'Plan to Read 🔖',statusProgress:'Currently Reading 👁',statusRepeat:'Rereading 🔁',
+            reviewPh:'What made it worth reading?',noReviewDone:'Add a review after you finish it!',planBadge:'To Read',planEmpty:'🔖 Plan to read',
+            doneRow:'Finished',repeatRow:'Reread'},
+};
+function getVocab(sec){return VOCAB[sec]||VOCAB.movies}
+
+// Master genre lists shown as checkboxes in the Add/Edit modal, per section. Movies/Series/
+// Anime share a broad film & TV genre vocabulary (with a few anime-specific terms folded in
+// since many anime entries reuse these same section pages); Books gets its own literary set.
+const GENRES={
+  movies:['Action','Adventure','Animation','Comedy','Crime','Documentary','Drama','Family','Fantasy','Historical','Horror','Musical','Mystery','Romance','Sci-Fi','Slice of Life','Sports','Superhero','Thriller','War','Western'],
+  series:['Action','Adventure','Animation','Comedy','Crime','Documentary','Drama','Fantasy','Historical','Horror','Mystery','Romance','Sci-Fi','Slice of Life','Sports','Superhero','Thriller','War'],
+  anime:['Action','Adventure','Comedy','Drama','Fantasy','Horror','Isekai','Mecha','Mystery','Psychological','Romance','Sci-Fi','Seinen','Shonen','Shojo','Slice of Life','Sports','Supernatural','Thriller'],
+  books:['Biography','Classic','Fantasy','Fiction','Historical','Horror','Memoir','Mystery','Non-Fiction','Philosophy','Poetry','Romance','Sci-Fi','Self-Help','Short Stories','Thriller','Young Adult'],
+};
+
+// Every genre chip above maps to one of the 12 gradient themes (g0-g11) by mood, instead of
+// a random hash of the title. This means two entries tagged with the same primary genre —
+// which is exactly what franchise entries usually share — always render in matching colors.
+// Genre not recognised (blank, or something outside the lists above) falls back to the old
+// title-hash pick so nothing ever renders unstyled.
+const GENRE_MOOD={
+  action:'g7',adventure:'g11',animation:'g1',comedy:'g6',crime:'g9',documentary:'g9',
+  drama:'g0',family:'g1',fantasy:'g4',historical:'g9',horror:'g2',musical:'g6',
+  mystery:'g10',romance:'g10','sci-fi':'g3','slice of life':'g5',sports:'g7',
+  superhero:'g7',thriller:'g8',war:'g2',western:'g11',isekai:'g4',mecha:'g3',
+  psychological:'g8',seinen:'g8',shonen:'g7',shojo:'g10',supernatural:'g4',
+  biography:'g5',classic:'g0',fiction:'g0',memoir:'g9','non-fiction':'g1',
+  philosophy:'g0',poetry:'g10','self-help':'g6','short stories':'g8','young adult':'g11',
+};
+function gradientClassFor(item){
+  const first=(item.genre||'').split(',')[0]?.trim().toLowerCase();
+  return (first&&GENRE_MOOD[first])||('g'+(Math.abs(hashStr(item.title||''))%12));
+}
+
+function renderGenreGrid(sec){
+  const list=GENRES[sec]||GENRES.movies;
+  const grid=document.getElementById('genre-grid');
+  const selected=getSelectedGenres();
+  grid.innerHTML=list.map(g=>`<button type="button" class="genre-chip${selected.includes(g)?' sel':''}" onclick="toggleGenreChip('${g.replace(/'/g,"\\'")}',this)">${esc(g)}</button>`).join('');
+}
+function toggleGenreChip(g,el){
+  el.classList.toggle('sel');
+  const selected=[...document.querySelectorAll('.genre-chip.sel')].map(c=>c.textContent);
+  document.getElementById('f-genre').value=selected.join(', ');
+}
+function getSelectedGenres(){
+  const v=document.getElementById('f-genre').value||'';
+  return v.split(',').map(s=>s.trim()).filter(Boolean);
+}
+function setSelectedGenres(genreStr){
+  document.getElementById('f-genre').value=genreStr||'';
+}
+
+// Franchise/show-group names are scoped per-category — a movie franchise and a series
+// aren't the same kind of grouping, so a Books franchise list shouldn't show up while
+// adding a Movie, etc. Pulls every distinct franchise name already used in that category.
+function populateFranchiseOptions(sec){
+  const d=getData();
+  const names=new Set();
+  (d[sec]||[]).forEach(i=>{if(i.franchise)names.add(i.franchise)});
+  const dl=document.getElementById('franchise-options');
+  dl.innerHTML=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${esc(n)}">`).join('');
+}
+function onFranchiseInput(){/* reserved for future validation; datalist handles suggestion UI natively */}
+
+// Applies the correct vocabulary to every label/option in the Add/Edit modal for the given section.
+function applyVocabToModal(sec){
+  const v=getVocab(sec);
+  const isBook=sec==='books';
+  document.getElementById('lbl-region').textContent=v.region;
+  document.getElementById('lbl-genre').textContent=v.genre;
+  document.getElementById('lbl-director').textContent=v.creator;
+  const creatorPlaceholders={movies:'Christopher Nolan',series:'The Duffer Brothers',anime:'MAPPA, Studio Ghibli, ufotable…',books:'Frank Herbert'};
+  document.getElementById('f-director').placeholder=creatorPlaceholders[sec]||'Christopher Nolan';
+  document.getElementById('lbl-quote').textContent=v.quote;
+  document.getElementById('lbl-date').textContent=v.date;
+  document.getElementById('lbl-rewatch').textContent=v.rewatch;
+  document.getElementById('f-review').placeholder=v.reviewPh;
+  document.getElementById('opt-watched').textContent=v.statusDone;
+  document.getElementById('opt-plan').textContent=v.statusPlan;
+  document.getElementById('opt-watching').textContent=v.statusProgress;
+  document.getElementById('opt-rewatch').textContent=v.statusRepeat;
+  // swap which optgroup of the region/category select is visible
+  document.getElementById('region-group').style.display=isBook?'none':'';
+  document.getElementById('category-group').style.display=isBook?'':'none';
+  // pick a sensible default from whichever group is now visible
+  const defaultRegion=isBook?'Fiction':'Hollywood';
+  document.getElementById('f-region').value=defaultRegion;
+  // episode progress only makes sense for things with episodes
+  document.getElementById('fg-episodes').style.display=(sec==='series'||sec==='anime')?'':'none';
+}
+
+// ══ STORAGE ══
+function load(){try{return JSON.parse(localStorage.getItem('cv3')||'{"movies":[],"series":[],"anime":[],"books":[]}')}catch{return{movies:[],series:[],anime:[],books:[]}}}
+function save(d){localStorage.setItem('cv3',JSON.stringify(d))}
+function getData(){return load()}
+
+// ══ PAGE NAVIGATION ══
+function goPage(p,preserveFranchiseFilter){
+  curPage=p;
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('on'));
+  document.getElementById('pg-'+p).classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('ni-'+p)?.classList.add('active');
+  // bg — cross-category pages have no dedicated painted scene, so leave whichever was last active
+  if(!CROSS_PAGES.includes(p)){
+    document.querySelectorAll('.bg-layer').forEach(l=>l.classList.remove('on'));
+    document.getElementById('bl-'+p)?.classList.add('on');
+  }
+  // petals for anime
+  document.getElementById('petals-host').style.opacity=p==='anime'?'1':'0';
+  // accent
+  const m=PAGES[p];
+  document.documentElement.style.setProperty('--acc',m.acc);
+  document.getElementById('tb-title').textContent=m.title;
+  document.getElementById('tb-sub').textContent=m.sub;
+  document.getElementById('add-lbl').textContent=m.add;
+  document.getElementById('mt').textContent=m.add;
+  // the Add button doesn't make sense on cross-category pages (no single target section)
+  document.getElementById('add-btn-el').style.display=CROSS_PAGES.includes(p)?'none':'flex';
+  // reset filter
+  document.getElementById('search-inp').value='';
+  curFilter='all';
+  document.querySelectorAll('#fpills .fpill').forEach(el=>el.classList.remove('on'));
+  document.querySelector('#fpills .fpill')?.classList.add('on');
+  // A franchise filter left active from a previous visit would otherwise silently keep
+  // narrowing the grid on a plain sidebar click back into this section — reset it here
+  // unless this navigation IS the franchise-filter click itself (filterByFranchise passes
+  // true to opt out, since it just set the filter it wants applied).
+  if(!preserveFranchiseFilter&&franchiseFilters[p]!==undefined)franchiseFilters[p]=null;
+  renderAll();
+  // on phones the sidebar is an overlay — picking a page should close it automatically
+  if(document.body.classList.contains('is-mobile'))toggleMobileSidebar(false);
+}
+
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('#fpills .fpill').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');renderAll();
+}
+function setCrossFilter(page,cat,el){
+  crossFilters[page]=cat;
+  el.closest('.sec-filter-bar').querySelectorAll('.fpill').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');renderAll();
+}
+
+function setSF(sec,f,el){
+  secFilters[sec]=f;
+  franchiseFilters[sec]=null;
+  el.closest('.sec-filter-bar').querySelectorAll('.fpill').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');renderAll();
+}
+
+// Called when a franchise badge on a card is clicked. Jumps to that item's own section page
+// (so clicking a franchise badge from Home/Favourites/Watchlist still lands somewhere that can
+// actually show the full grouped set) and narrows the grid to only that franchise's entries.
+function filterByFranchise(sec,name){
+  if(!['movies','series','anime','books'].includes(sec))return;
+  franchiseFilters[sec]=name;
+  if(curPage!==sec)goPage(sec,true);
+  else renderAll();
+}
+function clearFranchiseFilter(sec){
+  franchiseFilters[sec]=null;
+  renderAll();
+}
+
+function setSortOrder(sec,order){
+  sortOrders[sec]=order;
+  localStorage.setItem('cv3_sort',JSON.stringify(sortOrders));
+  renderAll();
+}
+
+// Shared sort logic used by every section grid. "date" sorting uses the Watched/Read date
+// the user entered — an item watched in June 2024 sorts below one from July 2024 under
+// date_desc, exactly like a real watch history rather than just insertion order. Items with
+// no date at all fall to the end of a date-based sort rather than sorting as if from 1970.
+function sortItems(items,order){
+  const arr=[...items];
+  const hasDate=i=>!!i.date;
+  switch(order){
+    case'date_asc':
+      return arr.sort((a,b)=>{
+        if(!hasDate(a)&&!hasDate(b))return(a.addedAt||0)-(b.addedAt||0);
+        if(!hasDate(a))return 1;if(!hasDate(b))return-1;
+        return new Date(a.date)-new Date(b.date);
+      });
+    case'date_desc':
+      return arr.sort((a,b)=>{
+        if(!hasDate(a)&&!hasDate(b))return(b.addedAt||0)-(a.addedAt||0);
+        if(!hasDate(a))return 1;if(!hasDate(b))return-1;
+        return new Date(b.date)-new Date(a.date);
+      });
+    case'alpha_asc':
+      return arr.sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+    case'alpha_desc':
+      return arr.sort((a,b)=>(b.title||'').localeCompare(a.title||''));
+    case'rating_desc':
+      return arr.sort((a,b)=>(b.rating||0)-(a.rating||0));
+    case'rating_asc':
+      return arr.sort((a,b)=>(a.rating||0)-(b.rating||0));
+    case'added_desc':
+    default:
+      return arr.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  }
+}
+
+function homeTab(sec,el){
+  homeSection=sec;
+  document.querySelectorAll('.htab').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');renderHomeGrid();
+}
+function homeChip(f,el){
+  homeChipFilter=f;
+  document.querySelectorAll('.hchip').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');renderHomeGrid();
+}
+
+function toggleSidebar(){
+  sidebarSlim=!sidebarSlim;
+  document.getElementById('sidebar').classList.toggle('slim',sidebarSlim);
+  const arr=document.getElementById('toggle-arrow');
+  arr.innerHTML=sidebarSlim?'<polyline points="9 18 15 12 9 6"/></svg>':'<polyline points="15 18 9 12 15 6"/>';
+}
+
+// ══ RESPONSIVE — PHONE vs DESKTOP ══
+// The app has one layout that adapts: on a phone-sized viewport the sidebar becomes a
+// slide-in overlay (opened with the hamburger button, closed by tapping the backdrop or
+// picking a page); above that width it behaves like the original always-visible sidebar.
+// mql.matches is re-checked on every resize/orientation change, so rotating a tablet or
+// resizing a browser window mid-session re-adjusts the layout live, no reload needed.
+const mobileMQL=window.matchMedia('(max-width:860px)');
+function applyDeviceMode(){
+  const isMobile=mobileMQL.matches;
+  document.body.classList.toggle('is-mobile',isMobile);
+  if(!isMobile){
+    // leaving phone layout — make sure the overlay states don't linger into desktop view
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebar-backdrop').classList.remove('on');
+  }
+}
+function toggleMobileSidebar(force){
+  const open=typeof force==='boolean'?force:!document.getElementById('sidebar').classList.contains('mobile-open');
+  document.getElementById('sidebar').classList.toggle('mobile-open',open);
+  document.getElementById('sidebar-backdrop').classList.toggle('on',open);
+}
+mobileMQL.addEventListener('change',applyDeviceMode);
+applyDeviceMode();
+
+// ══ RENDER ══
+function renderAll(){
+  renderHomeStats();renderHomeGrid();renderHomeWidgets();
+  ['movies','series','anime','books'].forEach(s=>renderGrid(s));
+  renderCrossGrid('favourites');
+  renderCrossGrid('watchlist');
+  renderStatsPage();
+}
+
+const STATUS_META={
+  watched:{label:'Watched',color:'#4ADE80'},
+  plan:{label:'Plan to Watch',color:'#5B8EF8'},
+  watching:{label:'Currently Watching',color:'#93C5FD'},
+  rewatch:{label:'Rewatching',color:'#C4B5FD'},
+  dropped:{label:'Dropped',color:'#F87171'},
+};
+const CAT_META={
+  movies:{label:'Movies',icon:'🎬',color:'#7C5CFC'},
+  series:{label:'Series',icon:'📺',color:'#14B8A6'},
+  anime:{label:'Anime',icon:'⛩️',color:'#E8445A'},
+  books:{label:'Books',icon:'📚',color:'#F4B942'},
+};
+
+function renderStatsPage(){
+  const host=document.getElementById('stats-page-content');
+  if(!host)return;
+  const d=getData();
+  const cats=['movies','series','anime','books'];
+  const all=cats.flatMap(c=>(d[c]||[]).map(i=>({...i,_sec:i._sec||c})));
+
+  // ── Overview hero numbers ──
+  const totalEntries=all.length;
+  const totalWatched=all.filter(i=>i.status==='watched'||i.status==='rewatch').length;
+  const totalDropped=all.filter(i=>i.status==='dropped').length;
+  const totalRewatches=all.reduce((sum,i)=>sum+(i.rewatch||0),0);
+
+  let heroHtml=`<div class="stats-hero-row">
+    <div class="stats-hero-card"><div class="stats-hero-val">${totalEntries}</div><div class="stats-hero-lbl">Total in collection</div></div>
+    <div class="stats-hero-card"><div class="stats-hero-val">${totalWatched}</div><div class="stats-hero-lbl">Watched / Read</div></div>
+    <div class="stats-hero-card"><div class="stats-hero-val">${totalDropped}</div><div class="stats-hero-lbl">Dropped</div></div>
+    <div class="stats-hero-card"><div class="stats-hero-val">${totalRewatches}</div><div class="stats-hero-lbl">Total rewatches/rereads</div></div>
+  </div>`;
+
+  // ── Per-category breakdown: total, status chips, top genres ──
+  let catHtml=`<div class="stats-section">
+    <div class="stats-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>By Category</div>
+    <div class="stats-cat-grid">`;
+  cats.forEach(c=>{
+    const items=d[c]||[];
+    const meta=CAT_META[c];
+    const statusCounts={};
+    items.forEach(i=>{const s=i.status||'watched';statusCounts[s]=(statusCounts[s]||0)+1});
+    const statusChips=Object.entries(statusCounts).map(([s,n])=>{
+      const sm=STATUS_META[s]||{label:s,color:'#888'};
+      return`<span class="status-chip"><span class="dot" style="background:${sm.color}"></span>${sm.label}: ${n}</span>`;
+    }).join('');
+
+    const genreCount={};
+    items.forEach(i=>{(i.genre||'').split(',').forEach(g=>{const t=g.trim();if(t)genreCount[t]=(genreCount[t]||0)+1})});
+    const topGenres=Object.entries(genreCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxG=topGenres[0]?.[1]||1;
+    const genreHtml=topGenres.length
+      ?topGenres.map(([g,n])=>`<div class="genre-bar-row">
+          <div class="genre-bar-label">${esc(g)}</div>
+          <div class="genre-bar-track"><div class="genre-bar-fill" style="width:${Math.round(n/maxG*100)}%;background:${meta.color}"></div></div>
+          <div class="genre-bar-pct">${n}</div>
+        </div>`).join('')
+      :`<div class="stats-empty-note">No genres tagged yet</div>`;
+
+    catHtml+=`<div class="stats-cat-panel">
+      <div class="stats-cat-head"><span class="stats-cat-ico">${meta.icon}</span><span class="stats-cat-name">${meta.label}</span><span class="stats-cat-total">${items.length}</span></div>
+      <div class="status-chip-row">${statusChips||'<span class="stats-empty-note">Nothing added yet</span>'}</div>
+      ${genreHtml}
+    </div>`;
+  });
+  catHtml+=`</div></div>`;
+
+  // ── Rating distribution across everything, in 0.5-star buckets ──
+  const rated=all.filter(i=>i.rating>0);
+  const buckets={};
+  for(let b=0.5;b<=5;b+=0.5)buckets[b]=0;
+  rated.forEach(i=>{
+    const b=Math.round(i.rating*2)/2; // snap to nearest 0.5
+    buckets[b]=(buckets[b]||0)+1;
+  });
+  const maxBucket=Math.max(1,...Object.values(buckets));
+  let ratingHtml=`<div class="stats-section">
+    <div class="stats-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Rating Distribution</div>
+    <div class="stats-cat-panel">`;
+  if(rated.length){
+    for(let b=5;b>=0.5;b-=0.5){
+      const n=buckets[b]||0;
+      ratingHtml+=`<div class="rating-dist-row">
+        <div class="rating-dist-lbl">${b}★</div>
+        <div class="rating-dist-track"><div class="rating-dist-fill" style="width:${Math.round(n/maxBucket*100)}%"></div></div>
+        <div class="rating-dist-count">${n}</div>
+      </div>`;
+    }
+  }else{
+    ratingHtml+=`<div class="stats-empty-note">Rate a few entries to see your distribution here</div>`;
+  }
+  ratingHtml+=`</div></div>`;
+
+  // ── Most rewatched / reread ──
+  const rewatched=all.filter(i=>(i.rewatch||0)>0).sort((a,b)=>(b.rewatch||0)-(a.rewatch||0)).slice(0,8);
+  let rewatchHtml=`<div class="stats-section">
+    <div class="stats-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Most Rewatched / Reread</div>
+    <div class="stats-cat-panel"><div class="rewatch-list">`;
+  if(rewatched.length){
+    rewatchHtml+=rewatched.map(i=>{
+      const thumb=i.poster?`<img src="${i.poster}" class="rewatch-thumb" style="object-fit:cover">`:`<div class="rewatch-thumb">${getEmoji(i._sec)}</div>`;
+      const unit=i._sec==='books'?'×':'×';
+      return`<div class="rewatch-item">${thumb}<div class="rewatch-name">${esc(i.title)}</div><div class="rewatch-count">${i.rewatch}${unit}</div></div>`;
+    }).join('');
+  }else{
+    rewatchHtml+=`<div class="stats-empty-note">Nothing rewatched or reread yet</div>`;
+  }
+  rewatchHtml+=`</div></div></div>`;
+
+  host.innerHTML=heroHtml+catHtml+ratingHtml+rewatchHtml;
+}
+
+// Favourites/Watchlist pull matching items from ALL FOUR categories at once.
+// Each item keeps its true home category (i._sec, set when it was saved) so that
+// clicking Edit/Delete/Fav on a card here still operates on the correct underlying bucket
+// instead of a literal 'favourites'/'watchlist' section that doesn't exist in storage.
+function renderCrossGrid(page){
+  const grid=document.getElementById('grid-'+page);
+  if(!grid)return;
+  const data=getData();
+  const q=document.getElementById('search-inp').value.toLowerCase().trim();
+  const catFilter=crossFilters[page];
+  let items=[];
+  ['movies','series','anime','books'].forEach(sec=>{
+    (data[sec]||[]).forEach(i=>items.push({...i,_sec:i._sec||sec}));
+  });
+  items=items.filter(i=>page==='favourites'?i.fav:i.status==='plan');
+  if(catFilter&&catFilter!=='all')items=items.filter(i=>i._sec===catFilter);
+  if(q)items=items.filter(i=>(i.title||'').toLowerCase().includes(q)||(i.genre||'').toLowerCase().includes(q)||(i.region||'').toLowerCase().includes(q)||(i.director||'').toLowerCase().includes(q));
+  items.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  if(!items.length){grid.innerHTML=emptyCrossHTML(page);return}
+  grid.innerHTML=items.map(i=>cardHTML(i,i._sec,page+'-'+i._sec)).join('');
+}
+
+function emptyCrossHTML(page){
+  const isFav=page==='favourites';
+  return`<div class="empty-state">
+    <div class="empty-ring"><div class="ei">${isFav?'⭐':'🔖'}</div></div>
+    <h3>${isFav?'No favourites yet':'Your watchlist is empty'}</h3>
+    <p>${isFav?'Tap the star on any card to add it here':'Set an item to "Plan to Watch" to add it here'}</p>
+  </div>`;
+}
+
+function renderGrid(sec){
+  const data=getData();const q=document.getElementById('search-inp').value.toLowerCase().trim();
+  let items=[...(data[sec]||[])];
+  if(curFilter==='favourites')items=items.filter(i=>i.fav);
+  else if(curFilter==='plan')items=items.filter(i=>i.status==='plan');
+  const sf=secFilters[sec];
+  if(sf&&sf!=='all')items=items.filter(i=>(i.region||i.genre||'').includes(sf)||(i.genre||'').includes(sf));
+  if(q)items=items.filter(i=>(i.title||'').toLowerCase().includes(q)||(i.genre||'').toLowerCase().includes(q)||(i.region||'').toLowerCase().includes(q)||(i.director||'').toLowerCase().includes(q));
+
+  const activeFranchise=franchiseFilters[sec];
+  if(activeFranchise)items=items.filter(i=>i.franchise===activeFranchise);
+
+  // Show/hide the "browsing <franchise>" banner with its clear button
+  const banner=document.getElementById('franchise-banner-'+sec);
+  if(banner){
+    if(activeFranchise){
+      banner.style.display='flex';
+      banner.querySelector('.franchise-banner-name').textContent=activeFranchise;
+    }else{
+      banner.style.display='none';
+    }
+  }
+
+  // Currently Watching/Reading items get pinned into their own section above the main grid,
+  // rather than sorted in among everything else — this only applies on a section's own
+  // dedicated page (not Home/Favourites/Watchlist previews) and only when that filter/search
+  // combination isn't already narrowing to something like just Favourites, where a separate
+  // "currently watching" carve-out would be confusing rather than helpful.
+  const watchingEl=document.getElementById('watching-'+sec);
+  const watchingGridEl=document.getElementById('watching-grid-'+sec);
+  let mainItems=items;
+  if(watchingEl&&curFilter==='all'&&(!sf||sf==='all')&&!q){
+    const watchingItems=items.filter(i=>i.status==='watching');
+    mainItems=items.filter(i=>i.status!=='watching');
+    if(watchingItems.length){
+      watchingEl.style.display='';
+      watchingGridEl.innerHTML=watchingItems.map(i=>cardHTML(i,sec,'watching-'+sec)).join('');
+    }else{
+      watchingEl.style.display='none';
+      watchingGridEl.innerHTML='';
+    }
+  }else if(watchingEl){
+    watchingEl.style.display='none';
+    watchingGridEl.innerHTML='';
+  }
+
+  mainItems=sortItems(mainItems,sortOrders[sec]||'date_desc');
+
+  // keep the dropdown's displayed value in sync with stored state (e.g. after a page reload)
+  const sortSel=document.getElementById('sort-'+sec);
+  if(sortSel)sortSel.value=sortOrders[sec]||'date_desc';
+
+  const grid=document.getElementById('grid-'+sec);
+  if(!grid)return;
+  if(!mainItems.length){grid.innerHTML=watchingEl&&watchingEl.style.display!=='none'?'':emptyHTML(sec);return}
+  grid.innerHTML=mainItems.map(i=>cardHTML(i,sec,'page-'+sec)).join('');
+}
+
+function emptyHTML(sec){
+  const icons={movies:'🎬',series:'📺',anime:'⛩️',books:'📚'};
+  const nouns={movies:'movie',series:'show',anime:'anime',books:'book'};
+  return`<div class="empty-state">
+    <div class="empty-ring"><div class="ei">${icons[sec]||'🎞'}</div></div>
+    <h3>Nothing here yet</h3>
+    <p>Start building your ${nouns[sec]||'collection'} collection</p>
+    <button class="empty-cta" onclick="openModal()">＋ Add your first ${nouns[sec]||'entry'}</button>
+  </div>`;
+}
+
+function renderHomeStats(){
+  const d=getData();
+  const tots={movies:(d.movies||[]).length,series:(d.series||[]).length,anime:(d.anime||[]).length,books:(d.books||[]).length};
+  const fav=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]).filter(i=>i.fav).length;
+  const plan=(d.movies||[]).concat(d.series||[],d.anime||[]).filter(i=>i.status==='plan').length;
+  const statsEl=document.getElementById('stats-row');
+  const cards=[
+    {ico:'#7C5CFC',svgPath:'<rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>',lbl:'Movies',val:tots.movies,sub:'in collection',subc:'#A78BFA'},
+    {ico:'#14B8A6',svgPath:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',lbl:'Series',val:tots.series,sub:'tracked',subc:'#5EEAD4'},
+    {ico:'#E8445A',svgPath:'<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10"/><circle cx="19" cy="5" r="3"/>',lbl:'Anime',val:tots.anime,sub:'series',subc:'#FDA4AF'},
+    {ico:'#F4B942',svgPath:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',lbl:'Books',val:tots.books,sub:'read',subc:'#FDE68A'},
+    {ico:'#E8445A',svgPath:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',lbl:'Favourites',val:fav,sub:'starred',subc:'#FCA5A5'},
+    {ico:'#7C5CFC',svgPath:'<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',lbl:'Watchlist',val:plan,sub:'to watch',subc:'#C4B5FD'},
+  ];
+  statsEl.innerHTML=cards.map(c=>`<div class="stat-card" style="--sc:${c.ico}">
+    <div class="stat-ico" style="background:${c.ico}22">
+      <svg viewBox="0 0 24 24" fill="none" stroke="${c.ico}" stroke-width="2">${c.svgPath}</svg>
+    </div>
+    <div class="stat-val">${c.val}</div>
+    <div class="stat-lbl">${c.lbl}</div>
+    <div class="stat-sub" style="color:${c.subc}">${c.sub}</div>
+  </div>`).join('');
+}
+
+function renderHomeGrid(){
+  const d=getData();const sec=homeSection;
+  let items=[...(d[sec]||[])];
+  if(homeChipFilter==='favourites')items=items.filter(i=>i.fav);
+  else if(homeChipFilter==='plan')items=items.filter(i=>i.status==='plan');
+  items=items.slice(0,12);
+  const g=document.getElementById('home-grid');
+  g.innerHTML=items.length?items.map(i=>cardHTML(i,sec,'home-'+sec)).join(''):emptyHTML(sec);
+}
+
+function renderHomeWidgets(){
+  const d=getData();
+  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]);
+  // Activity
+  const recent=[...all].sort((a,b)=>(b.addedAt||0)-(a.addedAt||0)).slice(0,5);
+  document.getElementById('activity-list').innerHTML=recent.length?recent.map(i=>`
+    <div class="act-item">
+      <div class="act-thumb">${i.poster?`<img src="${i.poster}" style="width:100%;height:100%;object-fit:cover;border-radius:5px">`:getEmoji(i._sec||'movies')}</div>
+      <div class="act-info">
+        <div class="act-name">${esc(i.title)}</div>
+        <div class="act-meta">${i.region||''} ${i.year?'· '+i.year:''}</div>
+      </div>
+      <div class="act-fav">${i.fav?'⭐':''}</div>
+    </div>`).join(''):`<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px 0">Nothing yet — start adding!</div>`;
+
+  // Genre bars
+  const genreCount={};
+  all.forEach(i=>{(i.genre||'').split(',').forEach(g=>{const t=g.trim();if(t){genreCount[t]=(genreCount[t]||0)+1}})});
+  const sorted=Object.entries(genreCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const max=sorted[0]?.[1]||1;
+  const barColors=['#7C5CFC','#5B8EF8','#14B8A6','#E8445A','#F4B942','#A78BFA'];
+  document.getElementById('genre-bars').innerHTML=sorted.map(([g,c],i)=>`
+    <div class="genre-bar-row">
+      <div class="genre-bar-label">${g}</div>
+      <div class="genre-bar-track"><div class="genre-bar-fill" style="width:${Math.round(c/max*100)}%;background:${barColors[i%6]}"></div></div>
+      <div class="genre-bar-pct">${Math.round(c/all.length*100)||0}%</div>
+    </div>`).join('')||`<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px 0">Add entries to see breakdown</div>`;
+
+  // Calendar
+  renderCal();
+
+  // Quote
+  const withQuotes=all.filter(i=>i.quote);
+  const CINEQUOTES=[
+    {q:"Why so serious?",f:"The Dark Knight"},
+    {q:"To infinity and beyond.",f:"Toy Story"},
+    {q:"You had me at hello.",f:"Jerry Maguire"},
+    {q:"Just keep swimming.",f:"Finding Nemo"},
+    {q:"I am the danger.",f:"Breaking Bad"},
+  ];
+  const quotePool=withQuotes.length?withQuotes.map(i=>({q:i.quote,f:i.title})):CINEQUOTES;
+  const picked=quotePool[Math.floor(Math.random()*quotePool.length)];
+  document.getElementById('quote-widget').innerHTML=`
+    <div class="quote-text">"${esc(picked.q)}"</div>
+    <div class="quote-from">— ${esc(picked.f)}</div>`;
+}
+
+let calYear=new Date().getFullYear();let calMonth=new Date().getMonth();
+function renderCal(){
+  const d=getData();
+  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]);
+  const watchedDays={};
+  all.forEach(i=>{if(i.date){const dt=new Date(i.date);if(dt.getFullYear()===calYear&&dt.getMonth()===calMonth){watchedDays[dt.getDate()]=(watchedDays[dt.getDate()]||[])}watchedDays[dt.getDate()]=[...watchedDays[dt.getDate()]||[],i.title]}});
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const today=new Date();const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const dayLabels=['S','M','T','W','T','F','S'];
+  let cells='';
+  for(let i=0;i<firstDay;i++)cells+=`<div class="cal-cell other"></div>`;
+  for(let i=1;i<=daysInMonth;i++){
+    const isToday=i===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const has=watchedDays[i];
+    cells+=`<div class="cal-cell${has?' has':''}${isToday?' today':''}" title="${has?has.join(', '):''}">${i}</div>`;
+  }
+  document.getElementById('cal-widget').innerHTML=`
+    <div class="cal-head">
+      <button class="cal-arrow" onclick="calNav(-1)">‹</button>
+      <span class="cal-month">${months[calMonth]} ${calYear}</span>
+      <button class="cal-arrow" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid">${dayLabels.map(d=>`<div class="cal-day">${d}</div>`).join('')}${cells}</div>`;
+}
+function calNav(dir){
+  calMonth+=dir;if(calMonth<0){calMonth=11;calYear--}if(calMonth>11){calMonth=0;calYear++}
+  renderCal();
+}
+
+// ══ CARD HTML ══
+function cardHTML(item,section,instanceKey){
+  // instanceKey distinguishes this specific rendered copy of the card from other copies of
+  // the SAME item that may be on screen simultaneously (its home grid, the Home dashboard
+  // preview, Favourites, Watchlist). Without this, two copies would share one DOM id and
+  // getElementById would only ever find the first one, silently breaking flip/edit/delete
+  // on every copy after that. Defaults to `section` for any caller that doesn't specify one.
+  const ik=instanceKey||section;
+  const uniqueId=ik+'-'+item.id;
+  const vocab=getVocab(section);
+  const g=gradientClassFor(item);
+  const tags=[item.region,...(item.genre||'').split(',').map(s=>s.trim()).filter(Boolean)].filter(Boolean).slice(0,3);
+  const wDate=item.date?new Date(item.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+  // Episode progress — only Series/Anime track this. Storing where you left off means a
+  // Dropped or Currently-Watching title tells you exactly which episode to resume from,
+  // instead of just "in progress" with no memory of how far you got.
+  const hasEpisodes=(section==='series'||section==='anime')&&item.epTotal>0;
+  const epPct=hasEpisodes?Math.max(0,Math.min(100,Math.round((item.epWatched||0)/item.epTotal*100))):0;
+  const epProgressEl=hasEpisodes?`
+    <div class="ep-progress" title="${item.epWatched||0} of ${item.epTotal} episodes watched">
+      <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${epPct}%"></div></div>
+      <div class="ep-progress-txt">${item.epWatched||0}/${item.epTotal} eps</div>
+    </div>`:'';
+  // Status badge (top-left) — was only ever shown for "plan to watch"; now every
+  // in-progress status gets a glanceable tag on the FRONT of the card too, so you don't
+  // have to flip a card just to remember you're mid-rewatch or dropped it.
+  const STATUS_TAGS={
+    plan:{emoji:'🔖',label:vocab.planBadge,cls:'st-plan'},
+    watching:{emoji:'👁',label:'Watching',cls:'st-watching'},
+    rewatch:{emoji:'🔁',label:'Rewatching',cls:'st-rewatch'},
+    dropped:{emoji:'✕',label:'Dropped',cls:'st-dropped'},
+  };
+  const st=STATUS_TAGS[item.status];
+  const planBadge=st?`<div class="plan-tag ${st.cls}">${st.emoji} ${st.label}</div>`:'';
+  // Small creator/studio credit line shown on the FRONT face so it isn't empty at a
+  // glance — uses whatever this section calls it (Director / Author / Animation Studio).
+  const creatorIcon={movies:'🎬',series:'🎬',anime:'🖌️',books:'✍️'}[section]||'🎬';
+  const creatorLine=item.director?`<div class="cover-creator">${creatorIcon} ${esc(item.director)}</div>`:'';
+  const favSvg=item.fav
+    ?`<svg viewBox="0 0 24 24" fill="#F4B942" stroke="#F4B942" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
+    :`<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+  const ph=getEmoji(section);
+  const posterEl=item.poster
+    ?`<img src="${item.poster}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    :'';
+  const phEl=`<div class="cover-ph" style="${item.poster?'display:none':''}">${ph}</div>`;
+  const franchiseBadge=item.franchise
+    ?`<div class="franchise-badge" onclick="event.stopPropagation();filterByFranchise('${section}','${esc(item.franchise).replace(/'/g,"\\'")}')" title="See all of ${esc(item.franchise)}">🔗 ${esc(item.franchise)}</div>`
+    :'';
+  // FRONT face — poster, title, tags, rating.
+  const frontContent=`
+    <div class="cover-bg"></div>
+    <div class="cover-poster-area">${posterEl}${phEl}</div>
+    <div class="cover-bottom">
+      ${franchiseBadge}
+      <div class="cover-title">${esc(item.title)}</div>
+      ${creatorLine}
+      <div class="cover-chips">${tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
+      ${epProgressEl}
+      <div class="cover-foot">
+        ${item.rating?`<div class="c-rating"><svg viewBox="0 0 24 24" width="11" height="11" fill="#F4B942" stroke="#F4B942" stroke-width="0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${Number(item.rating).toFixed(1)}</div>`:'<div></div>'}
+        ${item.year?`<div class="c-year">${item.year}</div>`:''}
+      </div>
+    </div>`;
+  // BACK face — review, rating, quote, and progress stats, all in section-appropriate vocabulary.
+  const reviewBody=item.review
+    ?`<div class="bk-review" onclick="event.stopPropagation()">"${esc(item.review)}"</div>`
+    :`<div class="bk-review empty">${item.status==='plan'?vocab.planEmpty:vocab.noReviewDone}</div>`;
+  const backContent=`
+    <div class="flip-review-face">
+      <div class="bk-in-head">
+        <div class="bk-in-title">${esc(item.title)}</div>
+        ${item.rating?`<div class="bk-in-score">${Number(item.rating).toFixed(1)}/5</div>`:''}
+      </div>
+      ${reviewBody}
+      ${item.quote?`<div class="bk-quote">${esc(item.quote)}</div>`:''}
+      <div class="bk-divider"></div>
+      <div class="bk-rows">
+        <div class="bk-row"><span class="bk-rl">${vocab.doneRow}</span><span class="bk-rv">${wDate}</span></div>
+        <div class="bk-row"><span class="bk-rl">${vocab.repeatRow}</span><span class="bk-rv">${item.rewatch||0}×</span></div>
+        ${hasEpisodes?`<div class="bk-row"><span class="bk-rl">Episodes</span><span class="bk-rv">${item.epWatched||0} / ${item.epTotal}</span></div>`:''}
+        ${item.director?`<div class="bk-row"><span class="bk-rl">${vocab.creator}</span><span class="bk-rv">${esc(item.director)}</span></div>`:''}
+      </div>
+      <div class="bk-acts">
+        <button class="bk-act" onclick="editEntry('${item.id}','${section}',event)">✏ Edit</button>
+        <button class="bk-act del" onclick="delEntry('${item.id}','${section}',event)">✕ Delete</button>
+      </div>
+    </div>`;
+  return`<div class="card-outer ${g}" data-id="${item.id}" data-sec="${section}">
+    <div class="flip-inner" id="flip-${uniqueId}" onclick="toggleFlip('${uniqueId}')">
+      <div class="flip-face flip-front">${frontContent}</div>
+      <div class="flip-face flip-back">${backContent}</div>
+    </div>
+    ${planBadge}
+    <button class="card-fav" onclick="toggleFav('${item.id}','${section}',event)">${favSvg}</button>
+  </div>`;
+}
+
+// ══ FLIP TOGGLE — simple 180° card flip ══
+// Clicking anywhere on the card (front or back) toggles the flip. Edit/Delete buttons on the
+// back stop propagation so clicking them doesn't also flip the card back to front.
+function toggleFlip(uniqueId){
+  const el=document.getElementById('flip-'+uniqueId);
+  if(!el)return;
+  el.classList.toggle('flipped');
+}
+
+// ══ UTILS ══
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i);return h>>>0}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function getEmoji(sec){return{movies:'🎬',series:'📺',anime:'⛩️',books:'📚'}[sec]||'🎞'}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2700)}
+
+// ══ FAVOURITES & DELETE ══
+function toggleFav(id,sec,e){
+  e.stopPropagation();
+  const d=getData();const i=(d[sec]||[]).find(x=>x.id===id);
+  if(!i)return;i.fav=!i.fav;save(d);renderAll();
+  toast(i.fav?'⭐ Added to favourites':'Removed from favourites');
+}
+function delEntry(id,sec,e){
+  e.stopPropagation();
+  if(!confirm('Delete this entry?'))return;
+  const d=getData();d[sec]=(d[sec]||[]).filter(i=>i.id!==id);
+  save(d);renderAll();toast('Deleted');
+}
+
+// ══ EDIT ══
+function editEntry(id,sec,e){
+  e.stopPropagation();
+  const d=getData();const i=(d[sec]||[]).find(x=>x.id===id);if(!i)return;
+  editId=id;openModal(sec);
+  setTimeout(()=>{
+    document.getElementById('f-title').value=i.title||'';
+    document.getElementById('f-region').value=i.region||(sec==='books'?'Fiction':'Hollywood');
+    document.getElementById('f-year').value=i.year||'';
+    document.getElementById('f-genre').value=i.genre||'';
+    renderGenreGrid(sec);
+    document.getElementById('f-director').value=i.director||'';
+    document.getElementById('f-franchise').value=i.franchise||'';
+    document.getElementById('f-status').value=i.status||'watched';
+    document.getElementById('f-review').value=i.review||'';
+    document.getElementById('f-quote').value=i.quote||'';
+    document.getElementById('f-date').value=i.date||'';
+    document.getElementById('f-rewatch').value=i.rewatch||0;
+    document.getElementById('f-ep-watched').value=i.epWatched||'';
+    document.getElementById('f-ep-total').value=i.epTotal||'';
+    setRating(i.rating||0);posterUrl=i.poster||'';
+    if(i.poster){document.getElementById('poster-preview-img').src=i.poster;document.getElementById('poster-preview').style.display='block'}
+    document.getElementById('mt').textContent='Edit Entry';
+  },40);
+}
+
+// ══ MODAL ══
+function openModal(sectionForVocab){
+  if(!editId){
+    rating=0;posterUrl='';
+    ['f-title','f-year','f-genre','f-director','f-review','f-quote','f-isbn','f-rating-num','f-franchise','f-ep-watched','f-ep-total'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-rewatch').value='0';
+    document.getElementById('f-date').value='';
+    document.getElementById('f-status').value='watched';
+    document.getElementById('tb-grid').innerHTML='';
+    document.getElementById('isbn-status').textContent='';
+    document.getElementById('poster-preview').style.display='none';
+    document.getElementById('poster-preview-img').src='';
+    document.getElementById('f-poster-url').value='';
+    updateStars();
+  }
+
+  // The section whose vocabulary/options should be shown. For a fresh add this is whichever
+  // real section page the user is on; for an edit it must be the item's actual home section
+  // (passed in explicitly by editEntry) rather than curPage, since curPage can be
+  // 'favourites'/'watchlist' — neither of which has its own vocabulary or storage bucket.
+  const vocabSec=sectionForVocab||(['movies','series','anime','books'].includes(curPage)?curPage:'movies');
+  const isBook=vocabSec==='books';
+  applyVocabToModal(vocabSec);
+  renderGenreGrid(vocabSec);
+  populateFranchiseOptions(vocabSec);
+  if(!editId)document.getElementById('f-region').value=isBook?'Fiction':'Hollywood';
+
+  if(!editId){
+    const m=PAGES[curPage]||PAGES.movies;
+    document.getElementById('mt').textContent=m.add;
+
+    // TMDB has zero book data (it's a film/TV database), so hide auto-search entirely
+    // for books rather than showing a tab that could never work for that content type.
+    // Conversely, ISBN cover lookup only makes sense for books, so it's hidden otherwise.
+    document.getElementById('ptab-tmdb-btn').style.display=isBook?'none':'';
+    document.getElementById('ptab-isbn-btn').style.display=isBook?'':'none';
+    document.getElementById('upload-hint').textContent=isBook
+      ?'JPG, PNG, WebP — max 8 MB. A photo of the cover works fine.'
+      :'JPG, PNG, WebP — max 8 MB.';
+    document.getElementById('url-hint').textContent=isBook
+      ?'Paste a cover link — Goodreads, Amazon, and Open Library product pages all work.'
+      :'Paste any direct image link.';
+
+    // Default tab: ISBN lookup for books (fastest genuinely-working option for book covers),
+    // Upload for everything else.
+    document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+    if(isBook){
+      document.getElementById('ptab-isbn-btn').classList.add('on');
+      document.getElementById('pane-isbn').classList.add('on');
+    }else{
+      document.querySelector('.ptab').classList.add('on');
+      document.getElementById('pane-upload').classList.add('on');
+    }
+  }
+  document.getElementById('ov').classList.add('open');
+}
+function closeModal(){document.getElementById('ov').classList.remove('open');editId=null}
+function ovClick(e){if(e.target===document.getElementById('ov'))closeModal()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+// ══ POSTER TABS ══
+function switchPTab(tab,el){
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pane-'+tab).classList.add('on');
+}
+
+// ══ FILE UPLOAD (BASE64 — persists in localStorage) ══
+function handleUpload(e){
+  const file=e.target.files?.[0];if(!file)return;
+  if(file.size>8*1024*1024){toast('Image too large (max 8 MB)');return}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    posterUrl=ev.target.result;
+    const img=document.getElementById('poster-preview-img');
+    img.src=posterUrl;
+    document.getElementById('poster-preview').style.display='block';
+    toast('✅ Image uploaded!');
+  };
+  reader.onerror=()=>toast('❌ Could not read file');
+  reader.readAsDataURL(file);
+  // reset file input so same file can be re-chosen
+  e.target.value='';
+}
+
+// Drag-and-drop on upload area
+const uploadArea=document.getElementById('upload-area');
+uploadArea.addEventListener('dragover',e=>{e.preventDefault();uploadArea.style.borderColor='rgba(124,92,252,0.6)'});
+uploadArea.addEventListener('dragleave',()=>{uploadArea.style.borderColor=''});
+uploadArea.addEventListener('drop',e=>{
+  e.preventDefault();uploadArea.style.borderColor='';
+  const file=e.dataTransfer.files?.[0];if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please drop an image file');return}
+  handleUpload({target:{files:[file]}});
+});
+
+// URL poster
+function urlPosterChanged(){
+  const url=document.getElementById('f-poster-url').value.trim();
+  if(!url){return}
+  posterUrl=url;
+  const img=document.getElementById('poster-preview-img');
+  img.onload=()=>{document.getElementById('poster-preview').style.display='block'};
+  img.onerror=()=>{posterUrl='';document.getElementById('poster-preview').style.display='none';toast('Could not load image URL')};
+  img.src=url;
+}
+
+// ══ TMDB ══
+function titleChanged(){
+  document.getElementById('tb-grid').innerHTML='';
+  const pp=document.getElementById('poster-preview');
+  if(posterUrl&&!posterUrl.startsWith('data:'))pp.style.display='none';
+}
+
+// TMDB requires a personal (free) API key tied to a TMDB account — it cannot be a
+// permanently-shared universal key, since TMDB can rate-limit or rotate any individual
+// key at any time. Store the user's own key locally once they provide it.
+function getTmdbKey(){
+  return localStorage.getItem('cv3_tmdb_key')||'2dca580c2a14b55200e784d157207b4d';
+}
+function setTmdbKey(k){
+  localStorage.setItem('cv3_tmdb_key',k.trim());
+}
+
+function onIsbnInput(){
+  document.getElementById('isbn-status').textContent='';
+}
+
+// Loads a book cover directly from Open Library's cover-image endpoint given an ISBN.
+// This deliberately does NOT use fetch() — Open Library's search/lookup JSON APIs have
+// known, unresolved CORS restrictions that block fetch() from a file:// (null-origin) page,
+// the same wall that blocks TMDB search. But <img src="..."> is a different browser
+// mechanism entirely: loading an image is not a CORS-governed operation, so pointing an
+// <img> tag straight at Open Library's cover URL works even though a fetch() to their API
+// would not. This is Open Library's own documented way to embed covers on any website.
+function lookupIsbnCover(){
+  const raw=document.getElementById('f-isbn').value.trim();
+  const isbn=raw.replace(/[^0-9Xx]/g,''); // strip hyphens/spaces, keep the trailing X some ISBN-10s end with
+  const status=document.getElementById('isbn-status');
+  if(!isbn){toast('Enter an ISBN first');return}
+  if(isbn.length!==10&&isbn.length!==13){
+    status.textContent='⚠️ That doesn\'t look like a 10 or 13-digit ISBN — double check and try again.';
+    status.style.color='#FCA5A5';
+    return;
+  }
+  const btn=document.getElementById('isbn-btn');
+  btn.disabled=true;btn.innerHTML='⏳ Loading…';
+  status.textContent='';status.style.color='var(--muted)';
+
+  const url=`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+  const testImg=new Image();
+  testImg.onload=()=>{
+    // Open Library returns a real (tiny, ~1x1) placeholder image instead of a 404 when it
+    // has no cover for that ISBN, so a naturalWidth/height check is needed to tell a genuine
+    // cover apart from that blank placeholder rather than trusting onload alone.
+    if(testImg.naturalWidth>10&&testImg.naturalHeight>10){
+      posterUrl=url;
+      const pv=document.getElementById('poster-preview-img');
+      pv.src=url;
+      document.getElementById('poster-preview').style.display='block';
+      status.textContent='✅ Cover found!';status.style.color='#86EFAC';
+    }else{
+      status.textContent='No cover on file for that ISBN — try Upload or Paste URL instead.';status.style.color='var(--muted)';
+    }
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Load cover from ISBN';
+  };
+  testImg.onerror=()=>{
+    status.textContent='Couldn\'t reach Open Library — check your connection, or try Upload / Paste URL.';status.style.color='var(--muted)';
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Load cover from ISBN';
+  };
+  testImg.src=url;
+}
+
+function openIsbnFinder(){
+  const title=document.getElementById('f-title').value.trim();
+  const q=title?encodeURIComponent(title):'';
+  window.open(`https://openlibrary.org/search?q=${q}`,'_blank','noopener');
+}
+
+async function doTMDB(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){toast('Enter a title first');return}
+  const btn=document.getElementById('tmdb-btn');
+  const g=document.getElementById('tb-grid');
+
+  // Opening this app as a double-clicked local file gives it origin 'null', and TMDB
+  // (like virtually every API) can't grant CORS access to 'null' without opening the
+  // door to any malicious local file — so this always fails under file://, regardless
+  // of key validity or network status. Detect it upfront rather than let a vague fetch
+  // error look like something a retry could fix.
+  if(location.protocol==='file:'){
+    g.innerHTML=`<div style="grid-column:1/-1;font-size:11px;color:var(--muted);line-height:1.6">
+      Auto-search can't run while this file is opened directly — browsers block that for security. See the note above for the one-time local-server fix, or just use Upload / Paste URL, which always work.
+    </div>`;
+    return;
+  }
+
+  btn.disabled=true;btn.innerHTML='⏳ Searching…';
+  const key=getTmdbKey();
+  try{
+    const r=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${encodeURIComponent(title)}&include_adult=false&page=1`);
+    if(r.status===401){
+      // the shared key is dead/rate-limited — this is the one failure mode a code fix alone can't solve,
+      // since TMDB keys are personal. Offer the actual fix instead of a dead-end message.
+      g.innerHTML=`<div style="grid-column:1/-1;font-size:11px;color:var(--muted);line-height:1.6">
+        TMDB's shared search key isn't working right now (it may be rate-limited).
+        <button type="button" onclick="promptTmdbKey()" style="display:block;margin-top:8px;padding:7px 12px;border-radius:8px;background:rgba(124,92,252,0.15);border:1px solid rgba(124,92,252,0.3);color:#C4B5FD;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer">Use your own free TMDB key →</button>
+        Or use the Upload / Paste URL tabs above — those always work.
+      </div>`;
+      btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search TMDB for poster';
+      return;
+    }
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    const hits=(j.results||[]).filter(x=>x.poster_path).slice(0,10);
+    if(!hits.length){g.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:var(--muted)">No posters found for that title — try Upload or Paste URL</div>'}
+    else{g.innerHTML=hits.map(x=>{
+      const img=`https://image.tmdb.org/t/p/w342${x.poster_path}`;
+      const yr=(x.release_date||x.first_air_date||'').slice(0,4);
+      return`<div class="tb-r" onclick="pickTMDB('${img}','${yr}',this)">
+        <img src="${img}" loading="lazy" onerror="this.parentElement.remove()">
+        <div class="tb-r-name">${esc(x.title||x.name||'')}</div>
+      </div>`}).join('')}
+  }catch(err){
+    // genuine network failure (offline, DNS, or a CORS block that slipped past the file:// check above)
+    g.innerHTML=`<div style="grid-column:1/-1;font-size:11px;color:var(--muted)">Couldn't reach TMDB — check your internet connection, or use Upload / Paste URL instead</div>`;
+  }
+  btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search TMDB for poster';
+}
+
+function promptTmdbKey(){
+  const k=prompt('Paste your free TMDB API key (v3 auth).\n\nGet one in under a minute at:\nhttps://www.themoviedb.org/settings/api\n\n(Sign up free → API → request a Developer key → copy the "API Key" value)');
+  if(k&&k.trim()){
+    setTmdbKey(k);
+    toast('✅ TMDB key saved — try searching again');
+    document.getElementById('tb-grid').innerHTML='';
+  }
+}
+
+function pickTMDB(url,yr,el){
+  document.querySelectorAll('.tb-r').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');posterUrl=url;
+  const img=document.getElementById('poster-preview-img');img.src=url;
+  document.getElementById('poster-preview').style.display='block';
+  if(yr&&!document.getElementById('f-year').value)document.getElementById('f-year').value=yr;
+}
+
+// ══ RATING ══
+function setRating(n){
+  rating=Math.max(0,Math.min(5,n));
+  document.getElementById('f-rating-num').value=rating?rating.toFixed(1).replace(/\.0$/,''):'';
+  updateStars();
+}
+function onRatingNumInput(){
+  let n=parseFloat(document.getElementById('f-rating-num').value);
+  if(isNaN(n))n=0;
+  n=Math.max(0,Math.min(5,n));
+  rating=n;
+  updateStars();
+}
+function updateStars(){
+  const pct=(rating/5*100).toFixed(1);
+  const disp=document.getElementById('star-display');
+  if(!disp)return;
+  disp.innerHTML=`<span class="stars-back">★★★★★</span><span class="stars-front" style="width:${pct}%">★★★★★</span>`;
+}
+
+// ══ SAVE ══
+function saveEntry(){
+  // No field is mandatory — an entry can be saved completely blank and filled in later.
+  // A missing title falls back to a friendly placeholder so the card still renders sensibly
+  // instead of showing an empty string.
+  const d=getData();
+
+  // For an EDIT, the item's real storage bucket must be found by looking it up directly —
+  // never inferred from curPage. curPage is 'favourites' or 'watchlist' whenever editing
+  // from those cross-category views, which doesn't match any real storage key, and would
+  // silently corrupt the item's _sec field (and therefore break every future Fav/Delete
+  // click on it) if used to decide where the edit gets written.
+  let targetSec=null;
+  let existingIdx=-1;
+  if(editId){
+    for(const s of['movies','series','anime','books']){
+      const ix=(d[s]||[]).findIndex(i=>i.id===editId);
+      if(ix>=0){targetSec=s;existingIdx=ix;break}
+    }
+  }
+  // Brand new entry: use whichever real section page the user is actually adding from.
+  if(!targetSec)targetSec=['movies','series','anime','books'].includes(curPage)?curPage:'movies';
+
+  const untitledLabel={movies:'Untitled Movie',series:'Untitled Series',anime:'Untitled Anime',books:'Untitled Book'}[targetSec];
+  const title=document.getElementById('f-title').value.trim()||untitledLabel;
+  const entry={
+    id:editId||uid(),
+    title,region:document.getElementById('f-region').value,
+    year:document.getElementById('f-year').value,
+    genre:document.getElementById('f-genre').value,
+    director:document.getElementById('f-director').value,
+    franchise:document.getElementById('f-franchise').value.trim(),
+    status:document.getElementById('f-status').value,
+    rating,review:document.getElementById('f-review').value.trim(),
+    quote:document.getElementById('f-quote').value.trim(),
+    date:document.getElementById('f-date').value,
+    rewatch:parseInt(document.getElementById('f-rewatch').value)||0,
+    epWatched:parseInt(document.getElementById('f-ep-watched').value)||0,
+    epTotal:parseInt(document.getElementById('f-ep-total').value)||0,
+    poster:posterUrl,fav:false,addedAt:Date.now(),_sec:targetSec,
+  };
+  if(editId&&existingIdx>=0){
+    entry.fav=d[targetSec][existingIdx].fav;
+    entry.addedAt=d[targetSec][existingIdx].addedAt; // preserve original add time, not just the edit time
+    d[targetSec][existingIdx]=entry;
+  }else{
+    if(!d[targetSec])d[targetSec]=[];
+    d[targetSec].unshift(entry);
+  }
+  save(d);renderAll();closeModal();
+  toast(editId?'✅ Updated!':'✨ Added to your collection!');
+}
+
+// ══ INIT ══
+renderAll();
+</script>
+</body>
+</html>
