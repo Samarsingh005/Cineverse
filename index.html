@@ -165,7 +165,7 @@ body{display:flex}
 .add-btn svg{width:15px;height:15px}
 
 /* ══ CONTENT AREA ══ */
-.content{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.07) transparent}
+.content{position:relative;flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.07) transparent}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px}
 
 .page{display:none}
@@ -619,6 +619,22 @@ body{display:flex}
 }
 .sidebar-backdrop.on{opacity:1;pointer-events:all}
 
+/* ══ PULL-TO-REFRESH (phone only — desktop already has a real refresh button) ══ */
+.pull-refresh{
+  position:absolute;top:0;left:50%;z-index:15;
+  width:36px;height:36px;border-radius:50%;
+  background:#14172a;border:1px solid var(--border2);
+  display:none;align-items:center;justify-content:center;color:var(--acc);
+  box-shadow:0 6px 18px rgba(0,0,0,0.4);
+  transform:translate(-50%,-60px);opacity:0;
+  transition:transform 0.15s ease-out;
+  pointer-events:none;
+}
+.pull-refresh svg{width:16px;height:16px}
+.pull-refresh.spinning svg{animation:pr-spin 0.7s linear infinite}
+@keyframes pr-spin{to{transform:rotate(360deg)}}
+body.is-mobile .pull-refresh{display:flex}
+
 /* ══════════════════════════════════════════════
    RESPONSIVE — tablet & phone breakpoints
    ══════════════════════════════════════════════ */
@@ -668,6 +684,19 @@ body{display:flex}
   .stats-hero-row{grid-template-columns:1fr 1fr;gap:8px}
   .stats-cat-grid{grid-template-columns:1fr}
 
+  /* Filter bar: region/genre pills used to wrap unpredictably and shove the sort dropdown
+     wherever it happened to land — often off on its own with a big dangling gap. Now the
+     pills shrink slightly to fit more per row, AND the sort control is forced onto its own
+     full-width row every time, so it always looks intentional instead of stranded. */
+  .sec-filter-bar{row-gap:8px}
+  .sec-filter-bar .fpill{padding:5px 11px;font-size:11px}
+  .sec-filter-bar .sort-select{
+    flex:1 0 100%;margin:2px 0 0;padding:9px 13px;
+    text-align:center;text-align-last:center;
+    background-position:right 16px center;
+    border-top:1px solid var(--border);padding-top:12px;
+  }
+
   .cards-grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
   .card-outer{height:240px}
   .cover-poster-area{height:120px}
@@ -682,6 +711,7 @@ body{display:flex}
   .home-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 }
 </style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%8E%AC</text></svg>">
 </head>
 <body>
 
@@ -782,7 +812,10 @@ body{display:flex}
   </div>
 
   <!-- CONTENT -->
-  <div class="content">
+  <div class="content" id="content-scroll">
+    <div class="pull-refresh" id="pull-refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg>
+    </div>
 
     <!-- ═══ HOME PAGE ═══ -->
     <div class="page on" id="pg-home">
@@ -1638,25 +1671,18 @@ async function cloudDelete(id){
 // shows a blank page.
 async function bootstrapData(){
   const localCache=(()=>{try{return JSON.parse(localStorage.getItem('cv3')||'{"movies":[],"series":[],"anime":[],"books":[]}')}catch{return{movies:[],series:[],anime:[],books:[]}}})();
-  const localHasData=Object.values(localCache).some(arr=>Array.isArray(arr)&&arr.length>0);
   if(!SUPABASE_ENABLED){STATE=localCache;renderAll();return}
   try{
     const{data,error}=await sb.from('entries').select('*');
     if(error)throw error;
     const fresh={movies:[],series:[],anime:[],books:[]};
     (data||[]).forEach(row=>{const sec=row.section;if(fresh[sec])fresh[sec].push(rowToEntry(row))});
-    const cloudHasData=Object.values(fresh).some(arr=>arr.length>0);
-    if(!cloudHasData&&localHasData){
-      // The request "succeeded" but came back with zero rows, while you clearly have
-      // entries saved locally. That's a red flag (missing table, blocked-by-RLS,
-      // wrong project) — NOT proof your collection is actually empty. Never let an
-      // ambiguous empty cloud response erase real local data.
-      STATE=localCache;cloudStatus='offline';
-      toast('⚠️ Cloud came back empty — showing your local copy (check your Supabase setup)');
-    }else{
-      STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
-      cloudStatus='synced';
-    }
+    // A successful fetch is ground truth now that the connection is confirmed working —
+    // including when it's empty, e.g. you just deleted your last remaining item. Trusting
+    // the cloud fully (rather than second-guessing an empty result) is exactly what makes
+    // deletions actually disappear on every device instead of only the one you deleted from.
+    STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
+    cloudStatus='synced';
   }catch(err){
     console.error('Supabase fetch failed, using local cache instead:',err);
     STATE=localCache;cloudStatus='offline';
@@ -1816,6 +1842,54 @@ function toggleMobileSidebar(force){
 }
 mobileMQL.addEventListener('change',applyDeviceMode);
 applyDeviceMode();
+
+// ══ PULL-TO-REFRESH ══
+// Drag down from the top of the page (only when already scrolled to the very top) to
+// re-fetch from Supabase — this is how a phone "notices" changes another device made,
+// since there's no live/realtime connection, only a fetch-on-demand.
+(function setupPullToRefresh(){
+  const scrollEl=document.getElementById('content-scroll');
+  const indicator=document.getElementById('pull-refresh');
+  if(!scrollEl||!indicator)return;
+  const THRESHOLD=68; // px of drag before releasing triggers a refresh
+  let startY=0,dragging=false,refreshing=false,pulled=0;
+
+  scrollEl.addEventListener('touchstart',e=>{
+    dragging=scrollEl.scrollTop<=0&&!refreshing;
+    startY=e.touches[0].clientY;
+  },{passive:true});
+
+  scrollEl.addEventListener('touchmove',e=>{
+    if(!dragging||refreshing)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy<=0){pulled=0;indicator.style.opacity=0;return}
+    pulled=Math.min(dy*0.5,100); // rubber-band: finger travels further than the indicator does
+    indicator.style.transform=`translate(-50%, ${pulled-60}px)`;
+    indicator.style.opacity=Math.min(pulled/THRESHOLD,1);
+    e.preventDefault(); // stop the page's own bounce/scroll while actively pulling
+  },{passive:false});
+
+  scrollEl.addEventListener('touchend',()=>{
+    if(!dragging||refreshing)return;
+    dragging=false;
+    if(pulled>=THRESHOLD){
+      refreshing=true;
+      indicator.classList.add('spinning');
+      indicator.style.transform='translate(-50%, 16px)';indicator.style.opacity=1;
+      bootstrapData().finally(()=>{
+        toast('🔄 Synced!');
+        setTimeout(()=>{
+          indicator.classList.remove('spinning');
+          indicator.style.transform='translate(-50%, -60px)';indicator.style.opacity=0;
+          refreshing=false;
+        },350);
+      });
+    }else{
+      indicator.style.transform='translate(-50%, -60px)';indicator.style.opacity=0;
+    }
+    pulled=0;
+  });
+})();
 
 // ══ RENDER ══
 function renderAll(){
