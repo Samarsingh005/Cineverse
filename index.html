@@ -703,12 +703,81 @@ body.is-mobile .pull-refresh{display:flex}
 
   .modal{width:94vw;padding:18px}
   .f2{grid-template-columns:1fr}
+
+  /* Touch targets: 26px/28px are fine for a mouse pointer but genuinely hard to hit
+     precisely with a thumb. Bumped up for phones specifically; desktop stays as-is since
+     mouse precision doesn't need the extra room and the tighter size looks better there. */
+  .card-fav{width:34px;height:34px}
+  .card-fav svg{width:16px;height:16px}
+  .genre-chip{padding:10px 14px;font-size:12.5px}
+  .hamburger{width:40px;height:40px}
+  .bk-in-head{padding-right:34px}
 }
 
 @media (max-width:460px){
   .cards-grid{grid-template-columns:repeat(2,1fr)}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .home-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+}
+
+/* ══ CINEMATIC COUNTDOWN (Upcoming titles) ══ */
+.cd-ov{
+  position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(4,5,12,0.82);backdrop-filter:blur(6px);padding:20px;
+}
+.cd-ov.on{display:flex;animation:cd-fade-in 0.25s ease-out}
+@keyframes cd-fade-in{from{opacity:0}to{opacity:1}}
+.cd-modal{
+  position:relative;width:100%;max-width:420px;border-radius:24px;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 60px var(--glow,rgba(124,92,252,0.25));
+  animation:cd-pop-in 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes cd-pop-in{from{transform:scale(0.92) translateY(12px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.cd-backdrop{position:absolute;inset:0;background:var(--cgrad,linear-gradient(150deg,#1A0840,#2E1480,#05070D));z-index:0}
+.cd-backdrop::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,rgba(255,255,255,0.08),transparent 60%),radial-gradient(ellipse at 50% 100%,rgba(0,0,0,0.5),transparent 70%)}
+.cd-stars{position:absolute;inset:0;z-index:0;opacity:0.5;pointer-events:none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 25%,white,transparent),
+    radial-gradient(1.5px 1.5px at 75% 15%,white,transparent),
+    radial-gradient(1px 1px at 45% 60%,white,transparent),
+    radial-gradient(1.5px 1.5px at 90% 70%,white,transparent),
+    radial-gradient(1px 1px at 10% 80%,white,transparent),
+    radial-gradient(1px 1px at 60% 35%,white,transparent),
+    radial-gradient(1.5px 1.5px at 30% 90%,white,transparent);
+  background-size:100% 100%;
+}
+.cd-content{position:relative;z-index:1;padding:40px 28px 32px;text-align:center}
+.cd-close{
+  position:absolute;top:14px;right:14px;z-index:2;width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);
+  cursor:pointer;font-size:13px;backdrop-filter:blur(4px);
+}
+.cd-kicker{font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--gold,#F4B942);text-transform:uppercase;margin-bottom:10px;opacity:0.9}
+.cd-title{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:white;line-height:1.2;margin-bottom:8px;text-shadow:0 2px 16px rgba(0,0,0,0.4)}
+.cd-sub{font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:28px}
+.cd-clock{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+.cd-unit{min-width:58px}
+.cd-num{
+  font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:var(--gold,#F4B942);
+  font-variant-numeric:tabular-nums;line-height:1;
+  text-shadow:0 0 24px rgba(244,185,66,0.45);
+}
+.cd-lbl{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-top:6px}
+.cd-sep{font-size:28px;font-weight:700;color:rgba(255,255,255,0.25);margin-bottom:16px;animation:cd-blink 1s step-start infinite}
+@keyframes cd-blink{50%{opacity:0.25}}
+.cd-tba,.cd-released{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.5;margin-bottom:22px;padding:0 8px}
+.cd-released{color:#6EE7B7}
+.cd-edit-btn{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;
+  padding:10px 20px;border-radius:12px;font-size:12.5px;font-weight:600;cursor:pointer;transition:background 0.2s;
+}
+.cd-edit-btn:hover{background:rgba(255,255,255,0.14)}
+@media (max-width:460px){
+  .cd-num{font-size:28px}
+  .cd-unit{min-width:46px}
+  .cd-title{font-size:22px}
+  .cd-content{padding:36px 18px 26px}
 }
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%8E%AC</text></svg>">
@@ -1134,9 +1203,26 @@ body.is-mobile .pull-refresh{display:flex}
     <div class="genre-grid" id="genre-grid"></div>
   </div>
 
+  <div class="fg" id="fg-format" style="display:none">
+    <label class="fl">Format</label>
+    <input type="hidden" id="f-format" value="anime">
+    <div class="poster-tabs">
+      <button type="button" class="ptab on" id="fmt-anime-btn" onclick="setFormat('anime')">🎬 Anime</button>
+      <button type="button" class="ptab" id="fmt-manga-btn" onclick="setFormat('manga')">📖 Manga</button>
+    </div>
+  </div>
+
   <div class="fg" id="fg-director">
     <label class="fl" id="lbl-director">Director / Author</label>
     <input class="fi" id="f-director" placeholder="Christopher Nolan">
+  </div>
+
+  <div class="fg" id="fg-pubstatus" style="display:none">
+    <label class="fl">Publication Status</label>
+    <select class="fs" id="f-pubstatus">
+      <option value="ongoing">📖 Ongoing</option>
+      <option value="completed">✅ Completed</option>
+    </select>
   </div>
 
   <div class="fg" id="fg-franchise">
@@ -1148,7 +1234,7 @@ body.is-mobile .pull-refresh{display:flex}
 
   <div class="fg">
     <label class="fl">Status</label>
-    <select class="fs" id="f-status">
+    <select class="fs" id="f-status" onchange="onStatusChange()">
       <option value="watched" id="opt-watched">Watched ✓</option>
       <option value="plan" id="opt-plan">Plan to Watch 🔖</option>
       <option value="watching" id="opt-watching">Currently Watching 👁</option>
@@ -1157,13 +1243,30 @@ body.is-mobile .pull-refresh{display:flex}
     </select>
   </div>
 
+  <div class="fg" id="fg-plan-reason" style="display:none">
+    <label class="fl">Why is it on your list? <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(optional)</span></label>
+    <select class="fs" id="f-plan-reason" onchange="onPlanReasonChange()">
+      <option value="">— No specific reason —</option>
+      <option value="upcoming">🗓️ Upcoming / Unreleased</option>
+      <option value="recommended">👍 Recommended</option>
+      <option value="hyped">🔥 Hyped / Must-See</option>
+      <option value="franchise">🔗 Franchise Catch-up</option>
+      <option value="streaming">📺 Waiting for Streaming</option>
+    </select>
+  </div>
+
+  <div class="fg" id="fg-release-date" style="display:none">
+    <label class="fl">Release Date <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(leave blank if unconfirmed — will show as "TBA")</span></label>
+    <input class="fi" type="date" id="f-release-date">
+  </div>
+
   <div class="f2" id="fg-episodes">
     <div class="fg">
-      <label class="fl">Episodes Watched</label>
+      <label class="fl" id="lbl-ep-watched">Episodes Watched</label>
       <input class="fi" type="number" id="f-ep-watched" min="0" placeholder="12">
     </div>
     <div class="fg">
-      <label class="fl">Total Episodes</label>
+      <label class="fl" id="lbl-ep-total">Total Episodes</label>
       <input class="fi" type="number" id="f-ep-total" min="0" placeholder="24">
     </div>
   </div>
@@ -1203,6 +1306,32 @@ body.is-mobile .pull-refresh{display:flex}
     <button class="bs" onclick="saveEntry()">Save to Collection ✦</button>
   </div>
 </div>
+</div>
+
+<!-- ═══ UPCOMING COUNTDOWN ═══ -->
+<div class="cd-ov" id="cd-ov" onclick="if(event.target===this)closeCountdown()">
+  <div class="cd-modal" id="cd-modal">
+    <button class="cd-close" onclick="closeCountdown()" aria-label="Close">✕</button>
+    <div class="cd-backdrop" id="cd-backdrop"></div>
+    <div class="cd-stars"></div>
+    <div class="cd-content">
+      <div class="cd-kicker">⏱ COUNTING DOWN TO</div>
+      <div class="cd-title" id="cd-title">Movie Title</div>
+      <div class="cd-sub" id="cd-sub">🗓️ Release date</div>
+      <div class="cd-clock" id="cd-clock">
+        <div class="cd-unit"><div class="cd-num" id="cd-days">00</div><div class="cd-lbl">Days</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><div class="cd-num" id="cd-hours">00</div><div class="cd-lbl">Hrs</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><div class="cd-num" id="cd-mins">00</div><div class="cd-lbl">Min</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-unit"><div class="cd-num" id="cd-secs">00</div><div class="cd-lbl">Sec</div></div>
+      </div>
+      <div class="cd-tba" id="cd-tba" style="display:none">🎬 Release date not announced yet — add one anytime by editing this entry.</div>
+      <div class="cd-released" id="cd-released" style="display:none">🎉 It's out! Edit this entry to mark it Watched whenever you catch it.</div>
+      <button class="cd-edit-btn" id="cd-edit-btn">✏ Edit Release Info</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1620,6 +1749,41 @@ function applyVocabToModal(sec){
   document.getElementById('f-region').value=defaultRegion;
   // episode progress only makes sense for things with episodes
   document.getElementById('fg-episodes').style.display=(sec==='series'||sec==='anime')?'':'none';
+  // Manga lives inside the Anime section as a "format" — only Anime gets the toggle
+  document.getElementById('fg-format').style.display=(sec==='anime')?'':'none';
+  if(sec==='anime'&&!editId)setFormat('anime'); // default to Anime for a fresh entry; editEntry() sets the real value itself
+}
+
+// Anime section doubles as "Anime & Manga" — this swaps every label that differs between
+// the two (Animation Studio ↔ Mangaka, Episodes ↔ Chapters) and reveals the
+// manga-only Publication Status field, all without needing a separate section/table.
+function setFormat(fmt){
+  document.getElementById('f-format').value=fmt;
+  document.getElementById('fmt-anime-btn').classList.toggle('on',fmt==='anime');
+  document.getElementById('fmt-manga-btn').classList.toggle('on',fmt==='manga');
+  const isManga=fmt==='manga';
+  document.getElementById('lbl-director').textContent=isManga?'Mangaka':'Animation Studio';
+  document.getElementById('f-director').placeholder=isManga?'Eiichiro Oda, Kentaro Miura…':'MAPPA, Studio Ghibli, ufotable…';
+  document.getElementById('lbl-ep-watched').textContent=isManga?'Chapters Read':'Episodes Watched';
+  document.getElementById('lbl-ep-total').textContent=isManga?'Total Chapters':'Total Episodes';
+  document.getElementById('f-ep-watched').placeholder=isManga?'340':'12';
+  document.getElementById('f-ep-total').placeholder=isManga?'1100+':'24';
+  document.getElementById('fg-pubstatus').style.display=isManga?'':'none';
+}
+
+// Plan-to-Watch gets an optional "why" tag; picking "Upcoming" specifically also reveals
+// a release-date field (left blank = TBA) since that's the one reason with an actual date
+// attached to it.
+function onStatusChange(){
+  const isPlan=document.getElementById('f-status').value==='plan';
+  document.getElementById('fg-plan-reason').style.display=isPlan?'':'none';
+  if(!isPlan){
+    document.getElementById('f-plan-reason').value='';
+    document.getElementById('fg-release-date').style.display='none';
+  }
+}
+function onPlanReasonChange(){
+  document.getElementById('fg-release-date').style.display=document.getElementById('f-plan-reason').value==='upcoming'?'':'none';
 }
 
 // ══ STORAGE ══
@@ -1641,6 +1805,8 @@ function entryToRow(sec,entry){
     rating:entry.rating,review:entry.review,quote:entry.quote,watch_date:entry.date,
     rewatch:entry.rewatch,ep_watched:entry.epWatched,ep_total:entry.epTotal,
     poster:entry.poster,fav:entry.fav,added_at:entry.addedAt,
+    format:entry.format||'',pub_status:entry.pubStatus||'',
+    plan_reason:entry.planReason||'',release_date:entry.releaseDate||null,
   };
 }
 function rowToEntry(row){
@@ -1650,6 +1816,8 @@ function rowToEntry(row){
     review:row.review,quote:row.quote,date:row.watch_date,rewatch:row.rewatch,
     epWatched:row.ep_watched,epTotal:row.ep_total,poster:row.poster,fav:row.fav,
     addedAt:row.added_at,_sec:row.section,
+    format:row.format||'',pubStatus:row.pub_status||'',
+    planReason:row.plan_reason||'',releaseDate:row.release_date||'',
   };
 }
 
@@ -1922,7 +2090,10 @@ function renderStatsPage(){
   const all=cats.flatMap(c=>(d[c]||[]).map(i=>({...i,_sec:i._sec||c})));
 
   // ── Overview hero numbers ──
-  const totalEntries=all.length;
+  // Same principle as the home page: "in collection" excludes pure Plan-to-Watch/Upcoming
+  // entries. Total in collection number is now: things watched, dropped, or in progress.
+  const engaged=all.filter(i=>i.status!=='plan');
+  const totalEntries=engaged.length;
   const totalWatched=all.filter(i=>i.status==='watched'||i.status==='rewatch').length;
   const totalDropped=all.filter(i=>i.status==='dropped').length;
   const totalRewatches=all.reduce((sum,i)=>sum+(i.rewatch||0),0);
@@ -1961,7 +2132,7 @@ function renderStatsPage(){
       :`<div class="stats-empty-note">No genres tagged yet</div>`;
 
     catHtml+=`<div class="stats-cat-panel">
-      <div class="stats-cat-head"><span class="stats-cat-ico">${meta.icon}</span><span class="stats-cat-name">${meta.label}</span><span class="stats-cat-total">${items.length}</span></div>
+      <div class="stats-cat-head"><span class="stats-cat-ico">${meta.icon}</span><span class="stats-cat-name">${meta.label}</span><span class="stats-cat-total">${items.filter(i=>i.status!=='plan').length}</span></div>
       <div class="status-chip-row">${statusChips||'<span class="stats-empty-note">Nothing added yet</span>'}</div>
       ${genreHtml}
     </div>`;
@@ -2049,6 +2220,7 @@ function renderGrid(sec){
   let items=[...(data[sec]||[])];
   if(curFilter==='favourites')items=items.filter(i=>i.fav);
   else if(curFilter==='plan')items=items.filter(i=>i.status==='plan');
+  else items=items.filter(i=>i.status!=='plan'); // default view: Plan to Watch lives in Watchlist only, doesn't pad this list
   const sf=secFilters[sec];
   if(sf&&sf!=='all')items=items.filter(i=>(i.region||i.genre||'').includes(sf)||(i.genre||'').includes(sf));
   if(q)items=items.filter(i=>(i.title||'').toLowerCase().includes(q)||(i.genre||'').toLowerCase().includes(q)||(i.region||'').toLowerCase().includes(q)||(i.director||'').toLowerCase().includes(q));
@@ -2115,9 +2287,13 @@ function emptyHTML(sec){
 
 function renderHomeStats(){
   const d=getData();
-  const tots={movies:(d.movies||[]).length,series:(d.series||[]).length,anime:(d.anime||[]).length,books:(d.books||[]).length};
+  // "In collection" should mean things you've actually engaged with — watched, watching,
+  // dropped, rewatched — not things merely sitting on a wishlist. Plan-to-Watch/Upcoming
+  // gets its own honest count in the Watchlist card below instead of padding these.
+  const notPlan=arr=>(arr||[]).filter(i=>i.status!=='plan');
+  const tots={movies:notPlan(d.movies).length,series:notPlan(d.series).length,anime:notPlan(d.anime).length,books:notPlan(d.books).length};
   const fav=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]).filter(i=>i.fav).length;
-  const plan=(d.movies||[]).concat(d.series||[],d.anime||[]).filter(i=>i.status==='plan').length;
+  const plan=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]).filter(i=>i.status==='plan').length;
   const statsEl=document.getElementById('stats-row');
   const cards=[
     {ico:'#7C5CFC',svgPath:'<rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>',lbl:'Movies',val:tots.movies,sub:'in collection',subc:'#A78BFA'},
@@ -2235,23 +2411,38 @@ function cardHTML(item,section,instanceKey){
   const uniqueId=ik+'-'+item.id;
   const vocab=getVocab(section);
   const g=gradientClassFor(item);
-  const tags=[item.region,...(item.genre||'').split(',').map(s=>s.trim()).filter(Boolean)].filter(Boolean).slice(0,3);
+  // Manga is a "format" inside the Anime section rather than its own section — swaps a
+  // handful of labels (Mangaka instead of Animation Studio, Chapters instead of Episodes)
+  // and adds a Publication Status (Ongoing/Completed) that regular anime doesn't have.
+  const isManga=section==='anime'&&item.format==='manga';
+  const isUpcoming=item.status==='plan'&&item.planReason==='upcoming';
+  const baseTags=[item.region,...(item.genre||'').split(',').map(s=>s.trim()).filter(Boolean)].filter(Boolean);
+  const tags=(isManga&&item.pubStatus)
+    ?[...baseTags.slice(0,2),item.pubStatus==='completed'?'✅ Completed':'📖 Ongoing']
+    :baseTags.slice(0,3);
   const wDate=item.date?new Date(item.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
-  // Episode progress — only Series/Anime track this. Storing where you left off means a
-  // Dropped or Currently-Watching title tells you exactly which episode to resume from,
-  // instead of just "in progress" with no memory of how far you got.
+  const releaseLabel=item.releaseDate?new Date(item.releaseDate+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'TBA';
+  // Episode/chapter progress — Series/Anime (and Manga, reusing the same two number fields
+  // as "chapters" instead of "episodes"). Storing where you left off means a Dropped or
+  // Currently-Watching/Reading title tells you exactly where to resume from.
   const hasEpisodes=(section==='series'||section==='anime')&&item.epTotal>0;
   const epPct=hasEpisodes?Math.max(0,Math.min(100,Math.round((item.epWatched||0)/item.epTotal*100))):0;
+  const unitLabel=isManga?'ch':'eps';
   const epProgressEl=hasEpisodes?`
-    <div class="ep-progress" title="${item.epWatched||0} of ${item.epTotal} episodes watched">
+    <div class="ep-progress" title="${item.epWatched||0} of ${item.epTotal} ${isManga?'chapters read':'episodes watched'}">
       <div class="ep-progress-bar"><div class="ep-progress-fill" style="width:${epPct}%"></div></div>
-      <div class="ep-progress-txt">${item.epWatched||0}/${item.epTotal} eps</div>
+      <div class="ep-progress-txt">${item.epWatched||0}/${item.epTotal} ${unitLabel}</div>
     </div>`:'';
-  // Status badge (top-left) — was only ever shown for "plan to watch"; now every
-  // in-progress status gets a glanceable tag on the FRONT of the card too, so you don't
-  // have to flip a card just to remember you're mid-rewatch or dropped it.
+  // Status badge (top-left). For Plan-to-Watch specifically, show the actual REASON tag
+  // (Upcoming/Recommended/Hyped/Catch-up/Streaming Wait) when one's set, since that's more
+  // useful at a glance than a generic "To Watch" label — falls back to generic otherwise.
+  const PLAN_REASON_TAGS={
+    upcoming:{emoji:'🗓️',label:'Upcoming'},recommended:{emoji:'👍',label:'Recommended'},
+    hyped:{emoji:'🔥',label:'Hyped'},franchise:{emoji:'🔗',label:'Catch-up'},
+    streaming:{emoji:'📺',label:'Streaming Wait'},
+  };
   const STATUS_TAGS={
-    plan:{emoji:'🔖',label:vocab.planBadge,cls:'st-plan'},
+    plan:item.status==='plan'?(PLAN_REASON_TAGS[item.planReason]?{...PLAN_REASON_TAGS[item.planReason],cls:'st-plan'}:{emoji:'🔖',label:vocab.planBadge,cls:'st-plan'}):null,
     watching:{emoji:'👁',label:'Watching',cls:'st-watching'},
     rewatch:{emoji:'🔁',label:'Rewatching',cls:'st-rewatch'},
     dropped:{emoji:'✕',label:'Dropped',cls:'st-dropped'},
@@ -2259,8 +2450,8 @@ function cardHTML(item,section,instanceKey){
   const st=STATUS_TAGS[item.status];
   const planBadge=st?`<div class="plan-tag ${st.cls}">${st.emoji} ${st.label}</div>`:'';
   // Small creator/studio credit line shown on the FRONT face so it isn't empty at a
-  // glance — uses whatever this section calls it (Director / Author / Animation Studio).
-  const creatorIcon={movies:'🎬',series:'🎬',anime:'🖌️',books:'✍️'}[section]||'🎬';
+  // glance — uses whatever this section (or manga format) calls it.
+  const creatorIcon=isManga?'📖':({movies:'🎬',series:'🎬',anime:'🖌️',books:'✍️'}[section]||'🎬');
   const creatorLine=item.director?`<div class="cover-creator">${creatorIcon} ${esc(item.director)}</div>`:'';
   const favSvg=item.fav
     ?`<svg viewBox="0 0 24 24" fill="#F4B942" stroke="#F4B942" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
@@ -2273,7 +2464,8 @@ function cardHTML(item,section,instanceKey){
   const franchiseBadge=item.franchise
     ?`<div class="franchise-badge" onclick="event.stopPropagation();filterByFranchise('${section}','${esc(item.franchise).replace(/'/g,"\\'")}')" title="See all of ${esc(item.franchise)}">🔗 ${esc(item.franchise)}</div>`
     :'';
-  // FRONT face — poster, title, tags, rating.
+  // FRONT face — poster, title, tags, rating. Upcoming titles show the release date (or
+  // TBA) here instead of a year, since "2026" is less useful than "when exactly".
   const frontContent=`
     <div class="cover-bg"></div>
     <div class="cover-poster-area">${posterEl}${phEl}</div>
@@ -2284,8 +2476,8 @@ function cardHTML(item,section,instanceKey){
       <div class="cover-chips">${tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
       ${epProgressEl}
       <div class="cover-foot">
-        ${item.rating?`<div class="c-rating"><svg viewBox="0 0 24 24" width="11" height="11" fill="#F4B942" stroke="#F4B942" stroke-width="0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${Number(item.rating).toFixed(1)}</div>`:'<div></div>'}
-        ${item.year?`<div class="c-year">${item.year}</div>`:''}
+        ${isUpcoming?'<div></div>':(item.rating?`<div class="c-rating"><svg viewBox="0 0 24 24" width="11" height="11" fill="#F4B942" stroke="#F4B942" stroke-width="0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${Number(item.rating).toFixed(1)}</div>`:'<div></div>')}
+        ${isUpcoming?`<div class="c-year">🗓️ ${releaseLabel}</div>`:(item.year?`<div class="c-year">${item.year}</div>`:'')}
       </div>
     </div>`;
   // BACK face — review, rating, quote, and progress stats, all in section-appropriate vocabulary.
@@ -2304,16 +2496,20 @@ function cardHTML(item,section,instanceKey){
       <div class="bk-rows">
         <div class="bk-row"><span class="bk-rl">${vocab.doneRow}</span><span class="bk-rv">${wDate}</span></div>
         <div class="bk-row"><span class="bk-rl">${vocab.repeatRow}</span><span class="bk-rv">${item.rewatch||0}×</span></div>
-        ${hasEpisodes?`<div class="bk-row"><span class="bk-rl">Episodes</span><span class="bk-rv">${item.epWatched||0} / ${item.epTotal}</span></div>`:''}
-        ${item.director?`<div class="bk-row"><span class="bk-rl">${vocab.creator}</span><span class="bk-rv">${esc(item.director)}</span></div>`:''}
+        ${hasEpisodes?`<div class="bk-row"><span class="bk-rl">${isManga?'Chapters':'Episodes'}</span><span class="bk-rv">${item.epWatched||0} / ${item.epTotal}</span></div>`:''}
+        ${item.director?`<div class="bk-row"><span class="bk-rl">${isManga?'Mangaka':vocab.creator}</span><span class="bk-rv">${esc(item.director)}</span></div>`:''}
       </div>
       <div class="bk-acts">
         <button class="bk-act" onclick="editEntry('${item.id}','${section}',event)">✏ Edit</button>
         <button class="bk-act del" onclick="delEntry('${item.id}','${section}',event)">✕ Delete</button>
       </div>
     </div>`;
+  // Upcoming cards open the cinematic countdown instead of flipping — there's no review to
+  // read yet for something that hasn't come out, but there IS a release date worth counting
+  // down to.
+  const clickAction=isUpcoming?`openCountdown('${item.id}','${section}')`:`toggleFlip('${uniqueId}')`;
   return`<div class="card-outer ${g}" data-id="${item.id}" data-sec="${section}">
-    <div class="flip-inner" id="flip-${uniqueId}" onclick="toggleFlip('${uniqueId}')">
+    <div class="flip-inner" id="flip-${uniqueId}" onclick="${clickAction}">
       <div class="flip-face flip-front">${frontContent}</div>
       <div class="flip-face flip-back">${backContent}</div>
     </div>
@@ -2329,6 +2525,48 @@ function toggleFlip(uniqueId){
   const el=document.getElementById('flip-'+uniqueId);
   if(!el)return;
   el.classList.toggle('flipped');
+}
+
+// ══ CINEMATIC COUNTDOWN (Upcoming titles) ══
+let countdownTimer=null;
+function openCountdown(id,sec){
+  const item=(getData()[sec]||[]).find(x=>x.id===id);
+  if(!item)return;
+  document.getElementById('cd-title').textContent=item.title||'Untitled';
+  document.getElementById('cd-backdrop').className='cd-backdrop '+gradientClassFor(item);
+  document.getElementById('cd-edit-btn').onclick=()=>{closeCountdown();editEntry(id,sec,{stopPropagation(){}})};
+
+  const tbaEl=document.getElementById('cd-tba'),releasedEl=document.getElementById('cd-released'),clockEl=document.getElementById('cd-clock'),subEl=document.getElementById('cd-sub');
+  if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null}
+
+  if(!item.releaseDate){
+    subEl.textContent='🗓️ Release date: TBA';
+    clockEl.style.display='none';tbaEl.style.display='';releasedEl.style.display='none';
+  }else{
+    const target=new Date(item.releaseDate+'T00:00:00').getTime();
+    subEl.textContent='🗓️ '+new Date(item.releaseDate+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const tick=()=>{
+      const diff=target-Date.now();
+      if(diff<=0){
+        clockEl.style.display='none';tbaEl.style.display='none';releasedEl.style.display='';
+        if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null}
+        return;
+      }
+      clockEl.style.display='';tbaEl.style.display='none';releasedEl.style.display='none';
+      const s=Math.floor(diff/1000);
+      document.getElementById('cd-days').textContent=Math.floor(s/86400);
+      document.getElementById('cd-hours').textContent=String(Math.floor((s%86400)/3600)).padStart(2,'0');
+      document.getElementById('cd-mins').textContent=String(Math.floor((s%3600)/60)).padStart(2,'0');
+      document.getElementById('cd-secs').textContent=String(s%60).padStart(2,'0');
+    };
+    tick();
+    countdownTimer=setInterval(tick,1000);
+  }
+  document.getElementById('cd-ov').classList.add('on');
+}
+function closeCountdown(){
+  document.getElementById('cd-ov').classList.remove('on');
+  if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null}
 }
 
 // ══ UTILS ══
@@ -2372,6 +2610,10 @@ function editEntry(id,sec,e){
     document.getElementById('f-rewatch').value=i.rewatch||0;
     document.getElementById('f-ep-watched').value=i.epWatched||'';
     document.getElementById('f-ep-total').value=i.epTotal||'';
+    if(sec==='anime'){setFormat(i.format||'anime');document.getElementById('f-pubstatus').value=i.pubStatus||'ongoing'}
+    document.getElementById('f-plan-reason').value=i.planReason||'';
+    document.getElementById('f-release-date').value=i.releaseDate||'';
+    onStatusChange();onPlanReasonChange();
     setRating(i.rating||0);posterUrl=i.poster||'';
     if(i.poster){document.getElementById('poster-preview-img').src=i.poster;document.getElementById('poster-preview').style.display='block'}
     document.getElementById('mt').textContent='Edit Entry';
@@ -2386,6 +2628,11 @@ function openModal(sectionForVocab){
     document.getElementById('f-rewatch').value='0';
     document.getElementById('f-date').value='';
     document.getElementById('f-status').value='watched';
+    document.getElementById('f-plan-reason').value='';
+    document.getElementById('f-release-date').value='';
+    document.getElementById('f-pubstatus').value='ongoing';
+    document.getElementById('fg-plan-reason').style.display='none';
+    document.getElementById('fg-release-date').style.display='none';
     document.getElementById('tb-grid').innerHTML='';
     document.getElementById('isbn-status').textContent='';
     document.getElementById('poster-preview').style.display='none';
@@ -2686,6 +2933,10 @@ function saveEntry(){
     rewatch:parseInt(document.getElementById('f-rewatch').value)||0,
     epWatched:parseInt(document.getElementById('f-ep-watched').value)||0,
     epTotal:parseInt(document.getElementById('f-ep-total').value)||0,
+    format:targetSec==='anime'?document.getElementById('f-format').value:'',
+    pubStatus:targetSec==='anime'&&document.getElementById('f-format').value==='manga'?document.getElementById('f-pubstatus').value:'',
+    planReason:document.getElementById('f-status').value==='plan'?document.getElementById('f-plan-reason').value:'',
+    releaseDate:document.getElementById('f-status').value==='plan'&&document.getElementById('f-plan-reason').value==='upcoming'?document.getElementById('f-release-date').value:'',
     poster:posterUrl,fav:false,addedAt:Date.now(),_sec:targetSec,
   };
   if(editId&&existingIdx>=0){
