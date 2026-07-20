@@ -1619,8 +1619,21 @@ let sidebarSlim=false;
 // same page — that's what makes it a real "log in from my phone and my laptop" app.
 const SUPABASE_URL='https://gdvnqlbjprknfdlaovbq.supabase.co';        // e.g. 'https://abcdefgh.supabase.co'
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkdm5xbGJqcHJrbmZkbGFvdmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNzU4ODcsImV4cCI6MjA5OTg1MTg4N30.Llg9INeSTQ7IXtTEQi2XA_Av8Y68xLGFnDwrYrmK9YU';      // the long "anon public" key, not the secret one
-const SUPABASE_ENABLED=SUPABASE_URL.startsWith('http')&&SUPABASE_ANON_KEY.length>20;
-const sb=SUPABASE_ENABLED?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+let SUPABASE_ENABLED=SUPABASE_URL.startsWith('http')&&SUPABASE_ANON_KEY.length>20;
+let sb=null;
+if(SUPABASE_ENABLED){
+  try{
+    sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  }catch(err){
+    // If the jsdelivr CDN script above got blocked (ad-blocker, corporate firewall, brief
+    // outage) `supabase` doesn't exist and this throws. Uncaught, that error would halt the
+    // ENTIRE rest of this script — not just cloud sync, literally everything, a blank
+    // unusable page. Falling back to local-only mode instead means a bad network day costs
+    // you cloud sync, not the whole app.
+    console.error('Could not start Supabase client — continuing in local-only mode:',err);
+    SUPABASE_ENABLED=false;
+  }
+}
 let cloudStatus='local'; // 'local' | 'synced' | 'offline' — shown in the corner toast on load
 
 // In-memory copy of everything currently on screen. Every existing function in this file
@@ -1823,15 +1836,36 @@ function rowToEntry(row){
 
 // Targeted cloud writes — called individually from saveEntry/toggleFav/delEntry with exactly
 // the one row that changed, rather than re-uploading the whole collection on every click.
+// ══ PENDING SYNC QUEUE ══
+// If a write to Supabase fails — wrong keys, a schema mismatch, no internet, project
+// paused — the item is NOT allowed to just quietly vanish the next time the cloud is
+// fetched. These two lists remember what still owes the cloud a write, bootstrapData()
+// protects them from being erased by a fresh fetch, and retries them automatically.
+function getPending(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return[]}}
+function addPending(key,id){const p=getPending(key);if(!p.includes(id)){p.push(id);localStorage.setItem(key,JSON.stringify(p))}}
+function removePending(key,id){localStorage.setItem(key,JSON.stringify(getPending(key).filter(x=>x!==id)))}
+
 async function cloudUpsert(sec,entry){
   if(!SUPABASE_ENABLED)return;
   const{error}=await sb.from('entries').upsert(entryToRow(sec,entry));
-  if(error){console.error('Supabase upsert failed:',error);toast('⚠️ Saved locally — cloud sync failed')}
+  if(error){
+    console.error('Supabase upsert failed:',error);
+    addPending('cv3_pending_upserts',entry.id);
+    toast('⚠️ Saved locally — will sync once the connection issue clears');
+  }else{
+    removePending('cv3_pending_upserts',entry.id);
+  }
 }
 async function cloudDelete(id){
   if(!SUPABASE_ENABLED)return;
   const{error}=await sb.from('entries').delete().eq('id',id);
-  if(error){console.error('Supabase delete failed:',error);toast('⚠️ Deleted locally — cloud sync failed')}
+  if(error){
+    console.error('Supabase delete failed:',error);
+    addPending('cv3_pending_deletes',id);
+    toast('⚠️ Deleted locally — will sync once the connection issue clears');
+  }else{
+    removePending('cv3_pending_deletes',id);
+  }
 }
 // Runs once on page load: pull everything from Supabase (so a second device sees what the
 // first one added) and use it as the working STATE. Falls back to the local cache if the
@@ -1849,8 +1883,29 @@ async function bootstrapData(){
     // including when it's empty, e.g. you just deleted your last remaining item. Trusting
     // the cloud fully (rather than second-guessing an empty result) is exactly what makes
     // deletions actually disappear on every device instead of only the one you deleted from.
+    // EXCEPT: anything still in the pending-sync queue hasn't actually reached the cloud yet
+    // (or, for deletes, hasn't left it yet) — those get re-applied on top of the fresh fetch
+    // instead of being allowed to silently reappear or disappear.
+    const pendingUpserts=getPending('cv3_pending_upserts');
+    const pendingDeletes=getPending('cv3_pending_deletes');
+    if(pendingDeletes.length)Object.keys(fresh).forEach(sec=>{fresh[sec]=fresh[sec].filter(i=>!pendingDeletes.includes(i.id))});
+    if(pendingUpserts.length){
+      Object.keys(localCache).forEach(sec=>{
+        (localCache[sec]||[]).forEach(item=>{
+          if(pendingUpserts.includes(item.id)&&fresh[sec]&&!fresh[sec].some(i=>i.id===item.id))fresh[sec].push(item);
+        });
+      });
+    }
     STATE=fresh;localStorage.setItem('cv3',JSON.stringify(STATE));
     cloudStatus='synced';
+    // Now that we have a live connection, retry whatever didn't make it last time.
+    pendingUpserts.forEach(id=>{
+      for(const sec of['movies','series','anime','books']){
+        const item=(fresh[sec]||[]).find(i=>i.id===id);
+        if(item){cloudUpsert(sec,item);break}
+      }
+    });
+    pendingDeletes.forEach(id=>cloudDelete(id));
   }catch(err){
     console.error('Supabase fetch failed, using local cache instead:',err);
     STATE=localCache;cloudStatus='offline';
@@ -2325,7 +2380,10 @@ function renderHomeGrid(){
 
 function renderHomeWidgets(){
   const d=getData();
-  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]);
+  // Same rule as everywhere else: Plan-to-Watch/Upcoming lives in Watchlist only. It
+  // shouldn't show up in "recently added", pad your genre taste breakdown, or surface as
+  // a "favourite quote" from something you haven't actually watched yet.
+  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]).filter(i=>i.status!=='plan');
   // Activity
   const recent=[...all].sort((a,b)=>(b.addedAt||0)-(a.addedAt||0)).slice(0,5);
   document.getElementById('activity-list').innerHTML=recent.length?recent.map(i=>`
@@ -2373,7 +2431,7 @@ function renderHomeWidgets(){
 let calYear=new Date().getFullYear();let calMonth=new Date().getMonth();
 function renderCal(){
   const d=getData();
-  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]);
+  const all=(d.movies||[]).concat(d.series||[],d.anime||[],d.books||[]).filter(i=>i.status!=='plan');
   const watchedDays={};
   all.forEach(i=>{if(i.date){const dt=new Date(i.date);if(dt.getFullYear()===calYear&&dt.getMonth()===calMonth){watchedDays[dt.getDate()]=(watchedDays[dt.getDate()]||[])}watchedDays[dt.getDate()]=[...watchedDays[dt.getDate()]||[],i.title]}});
   const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
